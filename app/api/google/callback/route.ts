@@ -8,7 +8,9 @@ export async function GET(request: Request) {
     const code = searchParams.get("code")
 
     if (!code) {
-      return NextResponse.redirect("http://localhost:3000/emails?connected=false")
+      return NextResponse.redirect(
+  `${process.env.NEXT_PUBLIC_APP_URL}/emails?connected=false`
+)
     }
 
     const supabase = await createClient()
@@ -18,7 +20,9 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser()
 
     if (!user) {
-      return NextResponse.redirect("http://localhost:3000/login")
+      return NextResponse.redirect(
+  `${process.env.NEXT_PUBLIC_APP_URL}/login`
+)
     }
 
     const { data: membership } = await supabase
@@ -28,7 +32,9 @@ export async function GET(request: Request) {
       .single()
 
     if (!membership) {
-      return NextResponse.redirect("http://localhost:3000/emails?connected=false")
+      return NextResponse.redirect(
+  `${process.env.NEXT_PUBLIC_APP_URL}/emails?connected=false`
+)
     }
 
     const oauth2Client = new google.auth.OAuth2(
@@ -62,9 +68,13 @@ export async function GET(request: Request) {
       }
     )
 
-    return NextResponse.redirect("http://localhost:3000/emails?connected=true")
+    return NextResponse.redirect(
+  `${process.env.NEXT_PUBLIC_APP_URL}/emails?connected=true`
+)
   } catch (error) {
     console.error(error)
-    return NextResponse.redirect("http://localhost:3000/emails?connected=error")
+    return NextResponse.redirect(
+  `${process.env.NEXT_PUBLIC_APP_URL}/emails?connected=error`
+)
   }
 }
