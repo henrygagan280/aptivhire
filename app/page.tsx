@@ -1,361 +1,424 @@
+"use client"
+
+import TopCandidatesPodium from "@/components/top-candidates-podium"
+import { UploadCloud } from "lucide-react"
+import React from "react"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { Star, Download, Send, ChevronRight } from "lucide-react"
+import { Sidebar } from "@/components/sidebar"
+import { Header } from "@/components/header"
+import StatsCards from "@/components/stats-cards"
+import { CandidateFilters } from "@/components/candidate-filters"
+import { CandidateTable } from "@/components/candidate-table"
+import { ScoreLegend } from "@/components/score-legend"
+import { Footer } from "@/components/footer"
+import { Button } from "@/components/ui/button"
 
 
-"use client";
-
-
-
-import { useState } from "react";
-
-
-
-type CandidateResult = {
-  fileName: string;
-  candidateName: string;
-  score: number;
-  status: "Green" | "Amber" | "Red";
-  summary: string;
-  matchedSkills: string[];
-  missingSkills: string[];
-  recommendation: string;
-  email?: string;
-  phone?: string;
-};
-
-function statusColor(status: string) {
-  if (status === "Green") return "#16a34a";
-  if (status === "Amber") return "#f59e0b";
-  return "#dc2626";
+type SavedJob = {
+  id: string
+  title: string
+  company: string
+  location: string
+  description: string
+  source: "manual" | "indeed" | "totaljobs"
+  createdAt: string
 }
 
-export default function DemoPage() {
-  const [completed, setCompleted] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [isAnalysing, setIsAnalysing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [jobDescription, setJobDescription] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [results, setResults] = useState<CandidateResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  async function handleAnalyse() {
-    console.log("Button clicked");
+export default function CandidateRankingsPage() {
+const [jobTitle, setJobTitle] = useState("")
+const [jobDescription, setJobDescription] = useState("")
+const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
+const [selectedJobId, setSelectedJobId] = useState("")
+const [files, setFiles] = useState<File[]>([])
+const [loading, setLoading] = useState(false)
+const [results, setResults] = useState<any[]>([])
+const [error, setError] = useState("")
+const [completed, setCompleted] = useState(0)
+const [total, setTotal] = useState(0)
+const [jobUrl, setJobUrl] = useState("")
+const [importingJobUrl, setImportingJobUrl] = useState(false)
+const [jobUrlError, setJobUrlError] = useState("")
 
-    try {
-      setLoading(true);
-      setError("");
-      setResults([]);
 
-      // START PROGRESS BAR
-    setProgress(5);
-    setProgressMessage("Uploading files...");
 
-    const progressTimer = setInterval(() => {
-      setProgress((current) => {
-        if (current < 30) {
-          setProgressMessage("Extracting applicant files...");
-          return current + 4;
-        }
+useEffect(() => {
+  const savedResults = localStorage.getItem("aptivhire-results")
 
-        if (current < 60) {
-          setProgressMessage("Reading CVs and matching applicants...");
-          return current + 3;
-        }
+  if (savedResults) {
+    setResults(JSON.parse(savedResults))
+  }
 
-        if (current < 90) {
-          setProgressMessage("AI is analysing and ranking candidates...");
-          return current + 1;
-        }
+  const jobs = localStorage.getItem("aptivhire-jobs")
 
-        return current;
-      });
-    }, 800);
+  if (jobs) {
+    setSavedJobs(JSON.parse(jobs))
+  }
+}, [])
 
-      const formData = new FormData();
+useEffect(() => {
+  if (results.length > 0) {
+    localStorage.setItem(
+      "aptivhire-results",
+      JSON.stringify(results)
+    )
+  }
+}, [results])
 
-      formData.append("jobTitle", jobTitle);
-      formData.append("jobDescription", jobDescription);
+async function handleImportJobUrl() {
+  setJobUrlError("")
 
-      files.forEach((file) => {
-        formData.append("files", file);
-      });
+  if (!jobUrl.trim()) {
+    setJobUrlError("Paste a job URL first.")
+    return
+  }
 
-      console.log(
-        "Files selected:",
-        files.map((file) => file.name)
-      );
-
-      console.log("About to call /api/analyse");
-
-      const progressInterval = setInterval(async () => {
   try {
-    const res = await fetch("/api/analyse-status");
-    const progress = await res.json();
+    setImportingJobUrl(true)
 
-    setCompleted(progress.completed || 0);
-    setTotal(progress.total || 0);
+    const response = await fetch("/api/import-job-url", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ url: jobUrl }),
+    })
 
-  } catch (err) {
-    console.error(err);
+    const data = await response.json()
+
+    if (!response.ok) {
+      setJobUrlError(
+  data.error ||
+    "We couldn't read this job page. Some sites like Indeed, LinkedIn and Workday block automatic imports. Please copy and paste the job description instead."
+)
+      return
+    }
+
+    if (data.jobTitle) {
+      setJobTitle(data.jobTitle)
+    }
+
+    if (data.jobDescription) {
+      setJobDescription(data.jobDescription)
+    }
+  } catch {
+    setJobUrlError("Could not import this job page.")
+  } finally {
+    setImportingJobUrl(false)
   }
-}, 500);
-
-      const response = await fetch("/api/analyse", {
-        method: "POST",
-        body: formData,
-      });
-
-      console.log("Response status:", response.status);
-
-      const text = await response.text();
-
-      console.log("Raw API response:", text);
-
-      let data;
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(text || "Server returned invalid response.");
-      }
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to analyse CVs.");
-      }
-
-      clearInterval(progressInterval);
-
-      setResults(data.results || []);
-    } catch (err) {
-      console.error("Analyse failed:", err);
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
-      );
-    } finally {
-  setLoading(false);
-  setCompleted(0);
-  setTotal(0);
 }
+
+function handleSelectSavedJob(jobId: string) {
+  setSelectedJobId(jobId)
+
+  const selectedJob = savedJobs.find(
+    (job) => job.id === jobId
+  )
+
+  if (!selectedJob) return
+
+  setJobTitle(selectedJob.title)
+  setJobDescription(selectedJob.description)
+}
+
+async function handleAnalyse() {
+  setError("")
+
+  if (!jobTitle || !jobDescription || files.length === 0) {
+    setError("Add a job title, job description and at least one CV file.")
+    return
   }
- 
+
+  
+
+  setLoading(true)
+  setCompleted(0)
+setTotal(files.length)
+const progressInterval = setInterval(async () => {
+  const statusRes = await fetch("/api/analyse-status")
+  const status = await statusRes.json()
+
+  setCompleted(status.completed || 0)
+  setTotal(status.total || files.length)
+}, 500)
+
+  try {
+    const formData = new FormData()
+    formData.append("jobTitle", jobTitle)
+    formData.append("jobDescription", jobDescription)
+
+    files.forEach((file) => {
+      formData.append("files", file)
+    })
+
+const res = await fetch("/api/analyse", {
+  method: "POST",
+  body: formData,
+})
+
+const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.error || "Analysis failed")
+    }
+
+    const analysedCandidates =
+  (data.results || data.candidates || []).map(
+    (candidate: any) => ({
+      ...candidate,
+      jobId: selectedJobId,
+      roleTitle: jobTitle,
+    })
+  )
+
+setResults(analysedCandidates)
+  } catch (err: any) {
+    setError(err.message || "Something went wrong")
+  } finally {
+    clearInterval(progressInterval)
+    setLoading(false)
+  }
+
+}
   return (
-    <main className="page">
-      <section className="card">
-        <h1>AptivHire</h1>
+  <div className="flex min-h-screen bg-slate-50">
+    <Sidebar />
 
-        <p className="subtitle">
-          Upload an applicant ZIP, CSV, or CV files and rank every
-          candidate against the job description.
-        </p>
+    <div className="flex min-w-0 flex-1 flex-col">
+      <Header />
 
-        <label className="label">Job title</label>
-
-        <input
-          className="textInput"
-          value={jobTitle}
-          onChange={(e) => setJobTitle(e.target.value)}
-          placeholder="Example: Senior Frontend Developer"
-        />
-
-        <label className="label">Job description</label>
-
-        <textarea
-          className="textarea"
-          value={jobDescription}
-          onChange={(e) =>
-            setJobDescription(e.target.value)
-          }
-          placeholder="Paste the job description here..."
-        />
-
-        <label className="label">
-          Upload applicant ZIP / CSV / CVs
-        </label>
-
-        <input
-          type="file"
-          multiple
-          accept=".zip,.csv,.pdf,.doc,.docx"
-          onChange={(event) => {
-            const selected = Array.from(
-              event.target.files || []
-            );
-
-            console.log(
-              "Files picked:",
-              selected.map((file) => file.name)
-            );
-
-            setFiles(selected);
-            setResults([]);
-            setError("");
-          }}
-          className="fileInput"
-        />
-
-        {files.length > 0 && (
-          <div className="selectedBox">
-            <strong>
-              {files.length} files selected
-            </strong>
-
-            <ul>
-              {files.map((file) => (
-                <li key={file.name}>{file.name}</li>
-              ))}
-            </ul>
+      <main className="flex-1 space-y-6 px-8 py-7">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="text-[34px] font-bold tracking-tight text-slate-950">
+              Candidate Ranking Report
+            </h1>
+            <p className="mt-3 max-w-3xl text-base font-medium leading-7 text-slate-600">
+              Upload CVs, connect them to a role and let AptivHire rank the strongest applicants.
+            </p>
           </div>
-        )}
 
-        <button
-          onClick={handleAnalyse}
-          disabled={loading}
-          className="button"
-        >
-          {loading
-            ? "Ranking applicants..."
-            : "Analyse & Rank CVs"}
-        </button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              className="h-11 gap-2 rounded-2xl border-slate-200 bg-white px-5 text-sm font-semibold text-slate-800 shadow-sm hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700"
+            >
+              <Download className="h-4 w-4" />
+              Export Shortlist
+            </Button>
 
-        {loading && (
-  <div className="selectedBox">
-    <strong>
-      Analysed {completed} / {total} applicants
-    </strong>
+            <Button className="h-11 gap-2 rounded-2xl bg-violet-600 px-5 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:bg-violet-700">
+              <Send className="h-4 w-4" />
+              Share Results
+            </Button>
+          </div>
+        </div>
 
-    <div
-      style={{
-        width: "100%",
-        height: "12px",
-        background: "#f3e6d8",
-        borderRadius: "999px",
-        overflow: "hidden",
-        marginTop: "12px",
-      }}
-    >
-      <div
-        style={{
-          width: `${total > 0 ? (completed / total) * 100 : 0}%`,
-          height: "100%",
-          background: "#e95b1f",
-          transition: "width 0.3s ease",
-        }}
-      />
-    </div>
+        <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+          <div className="grid gap-6 p-6 xl:grid-cols-[1fr_1.1fr]">
+            <div className="space-y-5">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+                    <Star className="h-5 w-5" />
+                  </div>
 
-    <p>
-      {total > 0
-        ? `${Math.round((completed / total) * 100)}% complete`
-        : "Preparing analysis..."}
-    </p>
-  </div>
-)}
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-950">
+                      Role details
+                    </h2>
+                    <p className="text-sm font-medium text-slate-500">
+                      Select a saved job or paste a new description.
+                    </p>
+                  </div>
+                </div>
 
-        {error && (
-          <div className="errorBox">{error}</div>
-        )}
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-800">
+                      Saved Jobs
+                    </label>
 
-        {results.length > 0 && (
-          <section className="results">
-            <h2>Candidate Leaderboard</h2>
-
-            <div className="leaderboard">
-              {results.map((candidate, index) => (
-                <article
-                  key={candidate.fileName}
-                  className="candidateCard"
-                >
-                  <div className="candidateTop">
-                    <div>
-                      <p className="rank">
-                        #{index + 1}
-                      </p>
-
-                      <h3>
-                        {candidate.candidateName}
-                      </h3>
-
-                      <p className="fileName">
-                        {candidate.fileName}
-                      </p>
-
-                      {candidate.email && (
-                        <p>{candidate.email}</p>
-                      )}
-
-                      {candidate.phone && (
-                        <p>{candidate.phone}</p>
-                      )}
-                    </div>
-
-                    <div
-                      className="scoreBadge"
-                      style={{
-                        background: statusColor(
-                          candidate.status
-                        ),
-                      }}
+                    <select
+                      value={selectedJobId}
+                      onChange={(e) => handleSelectSavedJob(e.target.value)}
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
                     >
-                      {candidate.score}/100
-                    </div>
+                      <option value="">Select a saved job...</option>
+
+                      {savedJobs.map((job) => (
+                        <option key={job.id} value={job.id}>
+                          {job.title}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  <p
-                    className="statusText"
-                    style={{
-                      color: statusColor(
-                        candidate.status
-                      ),
-                    }}
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-800">
+                      Job Title
+                    </label>
+
+                    <input
+                      value={jobTitle}
+                      onChange={(e) => setJobTitle(e.target.value)}
+                      placeholder="e.g. Senior Frontend Developer"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-800">
+                      Job Description
+                    </label>
+
+                    <textarea
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      placeholder="Paste the job description here..."
+                      className="min-h-[145px] w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-5 flex items-center gap-4">
+                  <div className="h-px flex-1 bg-slate-200" />
+                  <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Or Import From URL
+                  </span>
+                  <div className="h-px flex-1 bg-slate-200" />
+                </div>
+
+                <label className="mb-2 block text-sm font-semibold text-slate-800">
+                  Job Posting URL
+                </label>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <input
+                    value={jobUrl}
+                    onChange={(e) => setJobUrl(e.target.value)}
+                    placeholder="https://company.com/jobs/frontend-developer"
+                    className="h-12 flex-1 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleImportJobUrl}
+                    disabled={importingJobUrl}
+                    className="h-12 rounded-2xl bg-slate-950 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {candidate.status} —{" "}
-                    {candidate.recommendation}
+                    {importingJobUrl ? "Importing..." : "Import"}
+                  </button>
+                </div>
+
+                {jobUrlError && (
+                  <p className="mt-3 text-sm font-semibold text-red-600">
+                    {jobUrlError}
                   </p>
-
-                  <p className="summary">
-                    {candidate.summary}
-                  </p>
-
-                  <div className="skillsGrid">
-                    <div>
-                      <h4>Matched skills</h4>
-
-                      <ul>
-                        {candidate.matchedSkills.map(
-                          (skill) => (
-                            <li key={skill}>
-                              {skill}
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4>Missing skills</h4>
-
-                      <ul>
-                        {candidate.missingSkills.map(
-                          (skill) => (
-                            <li key={skill}>
-                              {skill}
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </article>
-              ))}
+                )}
+              </div>
             </div>
-          </section>
-        )}
-      </section>
-    </main>
-  );
+
+            <label className="group flex min-h-[430px] cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-violet-200 bg-gradient-to-br from-violet-50 via-white to-slate-50 px-8 py-12 text-center transition hover:border-violet-400 hover:from-violet-100/80 hover:shadow-sm">
+              <input
+                type="file"
+                multiple
+                accept=".zip,.docx,.pdf,.csv"
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                className="hidden"
+              />
+
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-violet-600 shadow-sm ring-1 ring-slate-200 transition group-hover:scale-105">
+                <UploadCloud size={34} />
+              </div>
+
+              <p className="text-lg font-bold text-slate-950">
+                Drag & drop candidate files here
+              </p>
+
+              <p className="mt-2 max-w-md text-sm font-medium leading-6 text-slate-500">
+                Upload PDF, DOCX, ZIP folders, or optional CSV metadata.
+                AptivHire will extract, score and rank every candidate.
+              </p>
+
+              <div className="mt-6 rounded-2xl border border-violet-200 bg-white px-5 py-2.5 text-sm font-semibold text-violet-700 shadow-sm transition group-hover:border-violet-300 group-hover:bg-violet-50">
+                Browse Files
+              </div>
+
+              {files.length > 0 && (
+                <p className="mt-4 rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700">
+                  {files.length} file{files.length === 1 ? "" : "s"} selected
+                </p>
+              )}
+            </label>
+          </div>
+
+          {loading && total > 0 && (
+            <div className="border-t border-slate-200 px-6 py-5">
+              <div className="mb-2 flex items-center justify-between text-sm font-semibold text-slate-700">
+                <span>Analysing candidates</span>
+                <span>
+                  {completed} of {total}
+                </span>
+              </div>
+
+              <div className="h-3 overflow-hidden rounded-full bg-violet-100">
+                <div
+                  className="h-full rounded-full bg-violet-600 transition-all duration-500"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round((completed / total) * 100)
+                    )}%`,
+                  }}
+                />
+              </div>
+
+              <p className="mt-2 text-xs font-medium text-slate-500">
+                Reading CVs, extracting skills and ranking applicants...
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <div className="mx-6 mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-5 md:flex-row md:items-center md:justify-between">
+            <button
+              onClick={handleAnalyse}
+              disabled={loading}
+              className="inline-flex h-12 items-center justify-center rounded-2xl bg-violet-600 px-6 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "Analysing Candidates..." : "Analyse Candidates"}
+            </button>
+
+            <p className="text-sm font-medium text-slate-500">
+              AptivHire will extract, score and rank all candidates.
+            </p>
+          </div>
+        </section>
+
+        <StatsCards results={results} />
+        <TopCandidatesPodium
+  results={results.filter((candidate) => !candidate.extractionFailed)}
+/>
+
+        <div id="all-candidates">
+          <CandidateTable candidates={results} />
+        </div>
+
+        <ScoreLegend />
+      </main>
+
+      <Footer />
+    </div>
+  </div>
+)
 }
