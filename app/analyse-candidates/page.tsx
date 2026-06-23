@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/browser"
 import { checkTeamLimits } from "@/lib/subscription/check-limits"
 
+
 type SavedJob = {
   id: string
   title: string
@@ -39,6 +40,8 @@ export default function CandidateRankingsPage() {
   const [importingJobUrl, setImportingJobUrl] = useState(false)
   const [jobUrlError, setJobUrlError] = useState("")
   const supabase = createClient()
+  const [analysisLocked, setAnalysisLocked] = useState(false)
+const [analysisLimitText, setAnalysisLimitText] = useState("")
 
   
 
@@ -92,6 +95,27 @@ export default function CandidateRankingsPage() {
       window.location.href = "/subscription"
       return
     }
+
+    const {
+  data: { user },
+} = await supabase.auth.getUser()
+
+if (!user) return
+
+const { allowed: limitsAllowed, limits, usage } =
+  await checkTeamLimits(supabase, user.id)
+
+if (
+  limitsAllowed &&
+  usage &&
+  limits.candidateAnalysesPerMonth !== null &&
+  usage.analysed >= limits.candidateAnalysesPerMonth
+) {
+  setAnalysisLocked(true)
+  setAnalysisLimitText(
+    `You have used all ${limits.candidateAnalysesPerMonth} candidate analyses in this billing period. This will reset on your next renewal date.`
+  )
+}
 
     const savedResults = localStorage.getItem("aptivhire-results")
 
@@ -677,7 +701,28 @@ const safeJobTitle =
             </div>
           </div>
 
-          <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+          {analysisLocked && (
+  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+    <h2 className="text-lg font-bold text-amber-900">
+      Candidate analysis limit reached
+    </h2>
+    <p className="mt-2 text-sm font-semibold leading-6 text-amber-700">
+      {analysisLimitText}
+    </p>
+    <button
+      onClick={() => (window.location.href = "/settings")}
+      className="mt-4 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white hover:bg-violet-700"
+    >
+      Manage Subscription
+    </button>
+  </div>
+)}
+
+          <section
+  className={`overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm ${
+    analysisLocked ? "pointer-events-none opacity-45 grayscale" : ""
+  }`}
+>
             <div className="grid gap-6 p-6 xl:grid-cols-[1fr_1.1fr]">
               <div className="space-y-5">
                 <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
@@ -852,11 +897,15 @@ const safeJobTitle =
 
             <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-5 md:flex-row md:items-center md:justify-between">
               <button
-                onClick={handleAnalyse}
-                disabled={loading}
+  onClick={handleAnalyse}
+  disabled={loading || analysisLocked}
                 className="inline-flex h-12 items-center justify-center rounded-2xl bg-violet-600 px-6 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Analysing Candidates..." : "Analyse Candidates"}
+                {analysisLocked
+  ? "Analysis Limit Reached"
+  : loading
+  ? "Analysing Candidates..."
+  : "Analyse Candidates"}
               </button>
 
               <p className="text-sm font-medium text-slate-500">

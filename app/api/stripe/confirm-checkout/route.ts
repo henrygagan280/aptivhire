@@ -68,22 +68,33 @@ export async function GET(req: NextRequest) {
   }
 
   await serviceSupabase
-    .from("teams")
-    .update({
-      plan,
-      seat_limit,
-      subscription_status: subscription.status,
-      stripe_customer_id: subscription.customer as string,
-      stripe_subscription_id: subscription.id,
-      stripe_price_id: priceId,
-      current_period_end: new Date(
-        subscription.items.data[0].current_period_end * 1000
-      ).toISOString(),
-      trial_ends_at: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000).toISOString()
-        : null,
-    })
-    .eq("id", teamId)
+  .from("teams")
+  .update({
+    plan,
+    seat_limit,
+    subscription_status: subscription.status,
+    stripe_customer_id: subscription.customer as string,
+    stripe_subscription_id: subscription.id,
+    stripe_price_id: priceId,
+
+    current_period_start: new Date(
+      subscription.items.data[0].current_period_start * 1000
+    ).toISOString(),
+
+    current_period_end: new Date(
+      subscription.items.data[0].current_period_end * 1000
+    ).toISOString(),
+
+    trial_ends_at: subscription.trial_end
+      ? new Date(subscription.trial_end * 1000).toISOString()
+      : null,
+  })
+  .eq("id", teamId)
+
+  await serviceSupabase
+  .from("subscription_usage")
+  .delete()
+  .eq("team_id", teamId)
 
   return NextResponse.redirect(new URL("/settings?success=true", req.url))
 }

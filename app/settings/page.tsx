@@ -264,9 +264,24 @@ setInvites(updatedInvites || [])
   window.dispatchEvent(new Event("usage-updated"))
 }
 
+const openBillingPortal = async () => {
+  const response = await fetch("/api/stripe/create-portal-session", {
+    method: "POST",
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    setSavedMessage(data.error || "Could not open billing portal.")
+    return
+  }
+
+  window.location.href = data.url
+}
+
   const saveSettings = async () => {
-    
-  const supabase = createClient()
+   
+ const supabase = createClient()
 
   const {
     data: { user },
@@ -435,13 +450,13 @@ setInvites(updatedInvites || [])
   />
 </div>
 
-                  <Link
-  href="/subscription"
+                  <button
+  onClick={openBillingPortal}
   className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition hover:bg-violet-700"
 >
   <CreditCard size={17} />
-  Manage Subscription
-</Link>
+  Manage / Cancel Subscription
+</button>
                 </div>
               </div>
             </section>
