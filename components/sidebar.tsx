@@ -224,40 +224,7 @@ useEffect(() => {
           onClick={() => setShowAssistant(!showAssistant)}
           className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left shadow-xl transition hover:bg-white/10"
         >
-          <div className="mb-4 flex items-center justify-between">
-            <p className="font-black text-violet-200">
-              AI Hiring Assistant
-            </p>
-
-            <ChevronRight
-              size={18}
-              className={`text-violet-300 transition ${
-                showAssistant ? "rotate-90" : ""
-              }`}
-            />
-          </div>
-
-          {showAssistant && (
-            <div className="space-y-3 text-sm">
-              <AssistantRow
-                dot="bg-orange-400"
-                text="3 candidates require review"
-                sub="High potential matches"
-              />
-
-              <AssistantRow
-                dot="bg-orange-500"
-                text="2 interviews need scheduling"
-                sub="This week"
-              />
-
-              <AssistantRow
-                dot="bg-emerald-400"
-                text="Pipeline is strong"
-                sub="Your funnel is healthy"
-              />
-            </div>
-          )}
+          
         </button>
       </nav>
 
@@ -325,39 +292,43 @@ useEffect(() => {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-lg font-black">
-  {jobs} / {limits?.activeJobs ?? 0}
+  {limits?.activeJobs === null ? `${jobs} / Unlimited` : `${jobs} / ${limits?.activeJobs ?? 0}`}
 </p>
               <p className="text-slate-300">Active jobs</p>
             </div>
 
             <div>
               <p className="text-lg font-black">
-  {analysed} / {limits?.candidateAnalysesPerMonth ?? 0}
+  {limits?.candidateAnalysesPerMonth === null
+    ? `${analysed} / Unlimited`
+    : `${analysed} / ${limits?.candidateAnalysesPerMonth ?? 0}`}
 </p>
               <p className="text-slate-300">Analysed</p>
             </div>
           </div>
 
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-            <div
-  className="h-full rounded-full bg-gradient-to-r from-violet-500 to-orange-400"
-  style={{
-    width: `${
-      Math.max(
-        limits?.activeJobs
-          ? Math.min(100, (jobs / limits.activeJobs) * 100)
-          : 0,
-        limits?.candidateAnalysesPerMonth
-          ? Math.min(
-              100,
-              (analysed / limits?.candidateAnalysesPerMonth) * 100
-            )
-          : 0
-      )
-    }%`,
-  }}
-/>
-          </div>
+  <div
+    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-orange-400"
+    style={{
+      width:
+        limits?.activeJobs === null ||
+        limits?.candidateAnalysesPerMonth === null
+          ? "100%"
+          : `${Math.max(
+              limits?.activeJobs
+                ? Math.min(100, (jobs / limits.activeJobs) * 100)
+                : 0,
+              limits?.candidateAnalysesPerMonth
+                ? Math.min(
+                    100,
+                    (analysed / limits.candidateAnalysesPerMonth) * 100
+                  )
+                : 0
+            )}%`,
+    }}
+  />
+</div>
         </Link>
       </div>
     </aside>
