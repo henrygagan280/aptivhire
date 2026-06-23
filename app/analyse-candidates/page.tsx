@@ -161,38 +161,62 @@ export default function CandidateRankingsPage() {
   async function incrementAnalysesUsed(teamId: string, amount: number) {
   const month = new Date().toISOString().slice(0, 7)
 
-  const { data: existing } = await supabase
+  console.log("USAGE FUNCTION CALLED", { teamId, amount, month })
+
+  const { data: existing, error: lookupError } = await supabase
     .from("subscription_usage")
-    .select("*")
+    .select("id, analyses_used")
     .eq("team_id", teamId)
     .eq("month", month)
-    .single()
+    .maybeSingle()
 
-  if (!existing) {
-    await supabase.from("subscription_usage").insert({
-      team_id: teamId,
-      month,
-      analyses_used: amount,
-      jobs_created: 0,
-    })
-
-    window.dispatchEvent(
-  new Event("usage-updated")
-)
-
+  if (lookupError) {
+    console.error("Usage lookup error:", lookupError)
     return
   }
 
-  await supabase
+  if (!existing) {
+    const { error: insertError } = await supabase
+      .from("subscription_usage")
+      .insert({
+        team_id: teamId,
+        month,
+        analyses_used: amount,
+        jobs_created: 0,
+      })
+
+    if (insertError) {
+      console.error("Usage insert error:", insertError)
+      return
+    }
+
+    console.log("USAGE INSERTED", { teamId, amount, month })
+
+    window.dispatchEvent(new Event("usage-updated"))
+    return
+  }
+
+  const { error: updateError } = await supabase
     .from("subscription_usage")
     .update({
       analyses_used: existing.analyses_used + amount,
     })
     .eq("id", existing.id)
-    window.dispatchEvent(
-  new Event("usage-updated")
-)
-}
+
+  if (updateError) {
+    console.error("Usage update error:", updateError)
+    return
+  }
+
+  console.log("USAGE UPDATED", {
+    previous: existing.analyses_used,
+    added: amount,
+    next: existing.analyses_used + amount,
+  })
+
+  window.dispatchEvent(new Event("usage-updated"))
+
+  }
 
   async function handleAnalyse() {
     setError("")

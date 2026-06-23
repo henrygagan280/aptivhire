@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/browser"
 import Link from "next/link"
 import {
   Eye,
@@ -71,9 +72,32 @@ export function CandidateTable({ candidates }: { candidates: any[] }) {
   const [selectedCandidates, setSelectedCandidates] = useState<number[]>([])
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
-  const [senderEmail, setSenderEmail] = useState("recruiter@aptivhire.net")
+  
+  const [senderEmail, setSenderEmail] = useState("")
   const [openMenuRank, setOpenMenuRank] = useState<number | null>(null)
   const [toastMessage, setToastMessage] = useState("")
+
+  useEffect(() => {
+  async function loadSenderEmail() {
+    const supabase = createClient()
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("default_sender_email")
+      .eq("id", user.id)
+      .single()
+
+    setSenderEmail(profile?.default_sender_email || user.email || "")
+  }
+
+  loadSenderEmail()
+}, [])
 
 const showToast = (message: string) => {
   setToastMessage(message)
