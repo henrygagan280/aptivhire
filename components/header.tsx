@@ -117,7 +117,7 @@ useEffect(() => {
       .from("team_members")
       .select("team_id")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
 
     if (!membership?.team_id) {
       setGlobalResults(filteredPages)

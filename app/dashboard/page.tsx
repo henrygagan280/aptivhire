@@ -129,17 +129,36 @@ export default function DashboardPage() {
     }
 
     const { data: membership } = await supabase
-      .from("team_members")
-      .select("team_id")
-      .eq("user_id", user.id)
-      .single()
+  .from("team_members")
+  .select("team_id")
+  .eq("user_id", user.id)
+  .maybeSingle()
 
-    if (!membership?.team_id) {
-      setLoading(false)
-      return
-    }
+if (!membership?.team_id) {
+  await supabase.auth.signOut()
+
+  localStorage.clear()
+
+  window.location.href =
+    "/login?removed=true"
+
+  return
+}
 
     const teamId = membership.team_id
+
+    const { data: team } = await supabase
+  .from("teams")
+  .select("subscription_status")
+  .eq("id", teamId)
+  .single()
+
+const allowedStatuses = ["active", "trialing"]
+
+if (!team || !allowedStatuses.includes(team.subscription_status)) {
+  window.location.href = "/subscription"
+  return
+}
 
     const [jobsRes, candidatesRes, pipelineRes, emailsRes, interviewsRes] =
       await Promise.all([

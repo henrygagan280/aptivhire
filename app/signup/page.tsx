@@ -1,12 +1,14 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/browser";
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+const inviteToken = searchParams.get("invite_token");
 
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
@@ -43,8 +45,21 @@ export default function SignupPage() {
       return;
     }
 
-    setNotice("Account created. Check your email to confirm your account.");
-    router.refresh();
+    if (inviteToken) {
+  setNotice("Account created. Please sign in to accept your invite.");
+
+  setTimeout(() => {
+    router.push(`/login?invite_token=${inviteToken}`);
+  }, 1000);
+
+  return;
+}
+
+setNotice("Account created. Choose a plan to continue.");
+
+setTimeout(() => {
+  router.push("/subscription");
+}, 1000);
   }
 
   return (
@@ -53,7 +68,7 @@ export default function SignupPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white">Create account</h1>
           <p className="mt-2 text-sm text-slate-400">
-            Start using AptivHire with Supabase Auth.
+            Start using Nuviq with Supabase Auth.
           </p>
         </div>
 

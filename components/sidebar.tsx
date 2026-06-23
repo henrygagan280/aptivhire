@@ -1,7 +1,7 @@
 "use client"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/browser"
 import { PLAN_LIMITS } from "@/lib/subscription/plans"
 import { getCurrentPlan } from "@/lib/subscription/get-current-plan"
@@ -28,8 +28,8 @@ export function Sidebar() {
   const [showAssistant, setShowAssistant] = useState(true)
   const [userName, setUserName] = useState("User")
 const [userInitials, setUserInitials] = useState("U")
-const [currentPlan, setCurrentPlan] = useState<PlanId>("solo")
-const limits = PLAN_LIMITS[currentPlan]
+const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null)
+const limits = currentPlan ? PLAN_LIMITS[currentPlan] : null
 
   const pathname = usePathname()
 
@@ -47,7 +47,7 @@ useEffect(() => {
     if (!user) return
 
     const plan = await getCurrentPlan(supabase, user.id)
-setCurrentPlan(plan as PlanId)
+setCurrentPlan(plan)
 
     const name =
       user.user_metadata?.full_name ||
@@ -72,7 +72,7 @@ setCurrentPlan(plan as PlanId)
       .from("team_members")
       .select("team_id")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
 
     if (!membership?.team_id) return
 
@@ -95,7 +95,7 @@ setCurrentPlan(plan as PlanId)
   .select("analyses_used")
   .eq("team_id", teamId)
   .eq("month", new Date().toISOString().slice(0, 7))
-  .single(),
+  .maybeSingle(),
 
         supabase
           .from("pipeline")
@@ -105,6 +105,7 @@ setCurrentPlan(plan as PlanId)
 
     setJobs(jobsRes.count || 0)
     setEmails(emailsRes.count || 0)
+    
     setAnalysed(candidatesRes.data?.analyses_used || 0)
     setActiveCandidates(pipelineRes.count || 0)
   }
@@ -121,6 +122,32 @@ setCurrentPlan(plan as PlanId)
 
 
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+const profileMenuRef = useRef<HTMLDivElement | null>(null)
+
+useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      profileMenuRef.current &&
+      !profileMenuRef.current.contains(event.target as Node)
+    ) {
+      setShowProfileMenu(false)
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside)
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside)
+  }
+}, [])
+
+  const handleLogout = async () => {
+  const supabase = createClient()
+
+  await supabase.auth.signOut()
+
+  window.location.href = "/login"
+}
 
   return (
     <aside className="sticky top-0 flex h-screen w-[260px] shrink-0 flex-col bg-[#070D1C] pt-2 text-white">
@@ -129,7 +156,7 @@ setCurrentPlan(plan as PlanId)
           <div className="h-9 w-9 rounded-full bg-gradient-to-br from-orange-300 via-violet-500 to-purple-700 shadow-[0_0_30px_rgba(139,92,246,0.55)]" />
 
           <span className="text-[22px] font-bold tracking-[-0.03em] text-white">
-            AptivHire
+            Nuviq
           </span>
         </div>
       </div>
@@ -234,7 +261,7 @@ setCurrentPlan(plan as PlanId)
         </button>
       </nav>
 
-      <div className="border-t border-white/10 p-4">
+      <div ref={profileMenuRef} className="border-t border-white/10 p-4">
         <button
           onClick={() => setShowProfileMenu(!showProfileMenu)}
           className="mb-4 flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-white/5"
@@ -273,10 +300,11 @@ setCurrentPlan(plan as PlanId)
             </Link>
 
             <button
-              className="block w-full rounded-xl px-3 py-2 text-left font-bold text-red-300 hover:bg-white/10"
-            >
-              Log out
-            </button>
+  onClick={handleLogout}
+  className="block w-full rounded-xl px-3 py-2 text-left font-bold text-red-300 hover:bg-white/10"
+>
+  Log out
+</button>
           </div>
         )}
 
@@ -290,21 +318,21 @@ setCurrentPlan(plan as PlanId)
 </p>
 
             <span className="rounded-full bg-violet-600 px-3 py-1 text-xs font-bold">
-  {limits.name} Plan
+  {limits ? `${limits.name} Plan` : "No Plan"}
 </span>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-lg font-black">
-  {jobs} / {limits.activeJobs ?? "∞"}
+  {jobs} / {limits?.activeJobs ?? 0}
 </p>
               <p className="text-slate-300">Active jobs</p>
             </div>
 
             <div>
               <p className="text-lg font-black">
-  {analysed} / {limits.candidateAnalysesPerMonth ?? "∞"}
+  {analysed} / {limits?.candidateAnalysesPerMonth ?? 0}
 </p>
               <p className="text-slate-300">Analysed</p>
             </div>
@@ -312,15 +340,23 @@ setCurrentPlan(plan as PlanId)
 
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-orange-400"
-              style={{
-                width: `${
-  limits.activeJobs
-    ? Math.min(100, (jobs / limits.activeJobs) * 100)
-    : 100
-}%`,
-              }}
-            />
+  className="h-full rounded-full bg-gradient-to-r from-violet-500 to-orange-400"
+  style={{
+    width: `${
+      Math.max(
+        limits?.activeJobs
+          ? Math.min(100, (jobs / limits.activeJobs) * 100)
+          : 0,
+        limits?.candidateAnalysesPerMonth
+          ? Math.min(
+              100,
+              (analysed / limits?.candidateAnalysesPerMonth) * 100
+            )
+          : 0
+      )
+    }%`,
+  }}
+/>
           </div>
         </Link>
       </div>

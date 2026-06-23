@@ -29,7 +29,7 @@ export async function GET(request: Request) {
       .from("team_members")
       .select("team_id")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
 
     if (!membership) {
       return NextResponse.redirect(

@@ -1,5 +1,5 @@
 "use client"
-
+import { hasActiveSubscription } from "@/lib/subscription/check-client-subscription"
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -66,6 +66,13 @@ const [rescheduleSlot, setRescheduleSlot] = useState("")
     const loadInterviews = async () => {
       const supabase = createClient()
 
+      const allowed = await hasActiveSubscription(supabase)
+
+if (!allowed) {
+  window.location.href = "/subscription"
+  return
+}
+
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -79,7 +86,7 @@ const [rescheduleSlot, setRescheduleSlot] = useState("")
         .from("team_members")
         .select("team_id")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
       if (membershipError || !membership) {
         console.error("Could not load team membership:", membershipError)
@@ -136,7 +143,7 @@ const [rescheduleSlot, setRescheduleSlot] = useState("")
 
   if (error) {
     console.error(error)
-    alert("Could not remove interview from AptivHire.")
+    alert("Could not remove interview from Nuviq.")
     return
   }
 
@@ -178,7 +185,7 @@ const rescheduleInterview = async () => {
 
   if (error) {
     console.error(error)
-    alert("Could not update interview in AptivHire.")
+    alert("Could not update interview in Nuviq.")
     return
   }
 
@@ -498,7 +505,7 @@ const filteredInterviews = useMemo(() => {
             </h2>
 
             <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
-              Are you sure you want to cancel this interview? This will remove it from AptivHire and delete the Google Calendar event.
+              Are you sure you want to cancel this interview? This will remove it from Nuviq and delete the Google Calendar event.
             </p>
 
             <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm">

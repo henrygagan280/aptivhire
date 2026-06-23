@@ -1,11 +1,14 @@
 "use client"
+
+import { hasActiveSubscription } from "@/lib/subscription/check-client-subscription"
 import { createClient } from "@/lib/supabase/browser"
 
 import { Sidebar } from "@/components/sidebar"
-import { canCreateJob } from "@/lib/subscription/check-limits";
+
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { PLAN_LIMITS } from "@/lib/subscription/plans"
 import { getCurrentPlan } from "@/lib/subscription/get-current-plan"
 import { useEffect, useState } from "react"
 import {
@@ -57,6 +60,12 @@ export default function JobsPage() {
   
 
   const loadJobs = async () => {
+    const allowed = await hasActiveSubscription(supabase)
+
+if (!allowed) {
+  window.location.href = "/subscription"
+  return
+}
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -67,7 +76,7 @@ export default function JobsPage() {
     .from("team_members")
     .select("team_id")
     .eq("user_id", user.id)
-    .single()
+    .maybeSingle()
 
   if (!membership) return
 
@@ -119,10 +128,14 @@ console.log("teamId =", teamId)
   if (!user) return
 
 const userPlan = await getCurrentPlan(supabase, user.id)
+const limits = PLAN_LIMITS[userPlan]
 
-const currentActiveJobs = jobs.length;
+const currentActiveJobs = jobs.length
 
-if (!canCreateJob(userPlan, currentActiveJobs)) {
+if (
+  limits.activeJobs !== null &&
+  currentActiveJobs >= limits.activeJobs
+) {
   setLimitMessage(
   "You've reached the active jobs limit for your current plan. Upgrade to continue creating jobs."
 );
@@ -139,9 +152,12 @@ if (!canCreateJob(userPlan, currentActiveJobs)) {
       description: description.trim(),
       source: "manual",
       created_by: user.id,
+      
     })
     .select()
     .single()
+
+    
 
   if (error) {
     console.error("Failed to create job:", error)
@@ -168,6 +184,10 @@ if (!canCreateJob(userPlan, currentActiveJobs)) {
   setCompany("")
   setLocation("")
   setDescription("")
+
+  window.dispatchEvent(
+    new Event("usage-updated")
+  )
 }
 
   const deleteJob = async (id: string) => {

@@ -1,5 +1,5 @@
 "use client"
-
+import { hasActiveSubscription } from "@/lib/subscription/check-client-subscription"
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -59,11 +59,18 @@ const [showConfirmationEmail, setShowConfirmationEmail] = useState(false)
 const [confirmationEmail, setConfirmationEmail] = useState("")
 const [confirmationSubject, setConfirmationSubject] = useState("")
 const [confirmationStatus, setConfirmationStatus] = useState("")
+const [companyName, setCompanyName] = useState("Nuviq")
   
 
   useEffect(() => {
   const loadThreads = async () => {
     const supabase = createClient()
+    const allowed = await hasActiveSubscription(supabase)
+
+if (!allowed) {
+  window.location.href = "/subscription"
+  return
+}
 
     const {
       data: { user },
@@ -75,9 +82,17 @@ const [confirmationStatus, setConfirmationStatus] = useState("")
       .from("team_members")
       .select("team_id")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
 
     if (!membership) return
+
+    const { data: teamData } = await supabase
+  .from("teams")
+  .select("company_name, name")
+  .eq("id", membership.team_id)
+  .single()
+
+setCompanyName(teamData?.company_name || teamData?.name || "Nuviq")
 
     const { data: rows, error } = await supabase
       .from("email_threads")
@@ -399,8 +414,10 @@ Please bring anything you may need for the interview, such as a copy of your CV,
 
 If you have any issues finding the location or need to rearrange, please reply to this email.
 
-Best,
-AptivHire`
+
+Kind regards,
+
+${companyName}`
   )
 } else {
   setConfirmationEmail(
@@ -416,8 +433,9 @@ Please join a few minutes early and make sure your camera, microphone and intern
 
 If you need to rearrange, please reply to this email.
 
-Best,
-AptivHire`
+Kind regards,
+
+${companyName}`
   )
 }
 

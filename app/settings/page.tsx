@@ -37,9 +37,18 @@ const defaultSettings: AccountSettings = {
   notificationsEnabled: true,
 }
 
+
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AccountSettings>(defaultSettings)
   const [savedMessage, setSavedMessage] = useState("")
+  const [team, setTeam] = useState<any>(null)
+const [members, setMembers] = useState<any[]>([])
+const [invites, setInvites] = useState<any[]>([])
+const [inviteEmail, setInviteEmail] = useState("")
+const [inviteLink, setInviteLink] = useState("")
+const [memberToRemove, setMemberToRemove] = useState<any>(null)
+const [showRemoveModal, setShowRemoveModal] = useState(false)
 
   useEffect(() => {
   const loadSettings = async () => {
@@ -59,6 +68,37 @@ export default function SettingsPage() {
       .eq("id", user.id)
       .single()
 
+      const { data: membership } = await supabase
+  .from("team_members")
+  .select("team_id")
+  .eq("user_id", user.id)
+  .maybeSingle()
+
+if (membership) {
+  const { data: teamData } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("id", membership.team_id)
+    .single()
+
+  const { data: memberData } = await supabase
+    .from("team_members_with_emails")
+    .select("*")
+    .eq("team_id", membership.team_id)
+
+  const { data: inviteData } = await supabase
+    .from("team_invites")
+    .select("*")
+    .eq("team_id", membership.team_id)
+    .eq("status", "pending")
+
+  setTeam(teamData)
+  setMembers(memberData || [])
+  setInvites(inviteData || [])
+  console.log("MEMBERS:", memberData)
+console.log("INVITES:", inviteData)
+}
+
     setSettings({
       fullName: profile?.full_name || "",
       email: profile?.email || user.email || "",
@@ -72,6 +112,8 @@ export default function SettingsPage() {
   loadSettings()
 }, [])
 
+
+
   const updateSetting = <K extends keyof AccountSettings>(
     key: K,
     value: AccountSettings[K]
@@ -79,7 +121,151 @@ export default function SettingsPage() {
     setSettings((current) => ({ ...current, [key]: value }))
   }
 
+  const currentMember = members.find(
+  (member) => member.email === settings.email
+)
+
+const isTeamOwner = currentMember?.role === "owner"
+
+const activeMemberEmails = new Set(
+  members.map((member) => member.email?.toLowerCase())
+)
+
+const visibleInvites = invites.filter(
+  (invite) => !activeMemberEmails.has(invite.email?.toLowerCase())
+)
+
+  const inviteUser = async () => {
+  if (!isTeamOwner) {
+    setSavedMessage("Only the team admin can invite users.")
+    return
+  }
+
+  if (team?.plan === "solo") {
+    setSavedMessage("Solo plans only include 1 account.")
+    return
+  }
+
+  if (!team || !inviteEmail.trim()) return
+
+  const seatLimit =
+    team.plan === "agency" ? 999999 : team.plan === "team" ? 5 : 1
+
+  const usedSeats = members.length + visibleInvites.length
+
+  if (usedSeats >= seatLimit) {
+    setSavedMessage("You have reached your plan seat limit.")
+    return
+  }
+
+  const supabase = createClient()
+
+  const token = crypto.randomUUID()
+
+  const {
+  data: { user },
+} = await supabase.auth.getUser()
+
+if (!user) return
+
+const expiresAt = new Date()
+expiresAt.setDate(expiresAt.getDate() + 7)
+
+const { error } = await supabase.from("team_invites").insert({
+  team_id: team.id,
+  email: inviteEmail.trim(),
+  token,
+  status: "pending",
+  invited_by: user.id,
+})
+
+  if (error) {
+    console.error(error)
+    setSavedMessage("Could not create invite link.")
+    return
+  }
+
+  const link = `${window.location.origin}/invite/accept?token=${token}`
+
+  setInviteLink(link)
+  setInviteEmail("")
+  setSavedMessage("Invite link created. Copy and share it manually.")
+
+  const { data: updatedInvites } = await supabase
+    .from("team_invites")
+    .select("*")
+    .eq("team_id", team.id)
+    .eq("status", "pending")
+
+  setInvites(updatedInvites || [])
+
+  window.dispatchEvent(new Event("usage-updated"))
+
+  window.setTimeout(() => {
+    setSavedMessage("")
+  }, 4000)
+}
+
+const removeMember = async (member: any) => {
+  if (!isTeamOwner) return
+
+  if (member.role === "owner") {
+    setSavedMessage("You cannot remove the team owner.")
+    return
+  }
+
+  setMemberToRemove(member)
+setShowRemoveModal(true)
+}
+
+const confirmRemoveMember = async () => {
+  if (!memberToRemove || !team) return
+
+  const supabase = createClient()
+  const removedEmail = memberToRemove.email?.trim().toLowerCase()
+
+  const { error } = await supabase
+    .from("team_members")
+    .delete()
+    .eq("team_id", team.id)
+    .eq("user_id", memberToRemove.user_id)
+
+  if (error) {
+    console.error(error)
+    setSavedMessage("Could not remove team member.")
+    return
+  }
+
+  await supabase
+    .from("team_invites")
+    .delete()
+    .eq("team_id", team.id)
+    .ilike("email", removedEmail)
+    .eq("status", "pending")
+
+  const { data: updatedMembers } = await supabase
+  .from("team_members_with_emails")
+  .select("*")
+  .eq("team_id", team.id)
+
+const { data: updatedInvites } = await supabase
+  .from("team_invites")
+  .select("*")
+  .eq("team_id", team.id)
+  .eq("status", "pending")
+
+setMembers(updatedMembers || [])
+setInvites(updatedInvites || [])
+
+  setSavedMessage("Team member removed.")
+  setShowRemoveModal(false)
+  setMemberToRemove(null)
+
+  window.dispatchEvent(new Event("usage-updated"))
+}
+
   const saveSettings = async () => {
+    
   const supabase = createClient()
 
   const {
@@ -155,7 +341,7 @@ export default function SettingsPage() {
               <SectionTitle
                 icon={<User />}
                 title="Account Details"
-                description="Update the profile information shown across AptivHire."
+                description="Update the profile information shown across Nuviq."
               />
 
               <div className="space-y-4 p-6">
@@ -201,7 +387,7 @@ export default function SettingsPage() {
               <SectionTitle
                 icon={<ShieldCheck />}
                 title="Plan Overview"
-                description="Your current AptivHire subscription."
+                description="Your current Nuviq subscription."
               />
 
               <div className="p-6">
@@ -213,19 +399,41 @@ export default function SettingsPage() {
 
                     <div>
                       <p className="text-lg font-bold text-slate-950">
-                        Pro Plan
-                      </p>
-                      <p className="text-sm font-medium text-slate-500">
-                        Team Plan
-                      </p>
+  {team?.subscription_status === "active" && team?.plan
+  ? `${team.plan.charAt(0).toUpperCase()}${team.plan.slice(1)} Plan`
+  : "No Plan"}
+</p>
+
+<p className="text-sm font-medium text-slate-500">
+  Status: {team?.subscription_status || "inactive"}
+</p>
                     </div>
                   </div>
 
                   <div className="mt-5 grid gap-3 text-sm">
-                    <PlanRow label="Renewal date" value="May 20, 2025" />
-                    <PlanRow label="Seats" value="1 recruiter" />
-                    <PlanRow label="Usage" value="Unlimited analysis" />
-                  </div>
+  <PlanRow
+    label="Plan"
+    value={
+  team?.subscription_status === "active" && team?.plan
+    ? team.plan
+    : "No plan selected"
+}
+  />
+
+  <PlanRow
+    label="Status"
+    value={team?.subscription_status || "inactive"}
+  />
+
+  <PlanRow
+    label="Seats"
+    value={
+      team?.plan === "agency"
+        ? `${members.length} / Unlimited`
+        : `${members.length} / ${team?.seat_limit || 1}`
+    }
+  />
+</div>
 
                   <Link
   href="/subscription"
@@ -238,6 +446,154 @@ export default function SettingsPage() {
               </div>
             </section>
           </div>
+
+          <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+  <SectionTitle
+    icon={<User />}
+    title="Team Members"
+    description="Manage users under your company account."
+  />
+
+  <div className="space-y-5 p-6">
+    {team && (
+  <div className="rounded-2xl border border-violet-100 bg-violet-50 p-4">
+    {team.subscription_status === "active" ||
+    team.subscription_status === "trialing" ? (
+      <>
+        <p className="text-sm font-bold text-violet-900">
+          Plan: {team.plan}
+        </p>
+
+        <p className="mt-1 text-sm font-medium text-violet-700">
+          Seats used: {members.length + visibleInvites.length} /{" "}
+          {team.plan === "agency"
+            ? "Unlimited"
+            : team.plan === "team"
+            ? 5
+            : 1}
+        </p>
+      </>
+    ) : (
+      <>
+        <p className="text-sm font-bold text-violet-900">
+          Plan: No Plan Selected
+        </p>
+
+        <p className="mt-1 text-sm font-medium text-violet-700">
+          No active subscription
+        </p>
+      </>
+    )}
+  </div>
+)}
+
+    {isTeamOwner &&
+(team?.subscription_status === "active" ||
+  team?.subscription_status === "trialing") &&
+(team?.plan === "team" || team?.plan === "agency") ? (
+  <div className="flex gap-3">
+    <Input
+      value={inviteEmail}
+      onChange={(e) => setInviteEmail(e.target.value)}
+      placeholder="user@email.com"
+    />
+
+    <button
+      onClick={inviteUser}
+      className="h-12 rounded-2xl bg-violet-600 px-5 text-sm font-bold text-white hover:bg-violet-700"
+    >
+      Create invite link
+    </button>
+  </div>
+    
+) : (
+  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+    {!isTeamOwner
+  ? "Only the team admin can invite users."
+  : team?.subscription_status === "active" ||
+    team?.subscription_status === "trialing"
+  ? "Solo plans include 1 account. Upgrade to Team or Agency to add additional users."
+  : "Choose a subscription plan to unlock team management and additional users."}
+  </div>
+)}
+
+{inviteLink && (
+  <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+    <p className="text-sm font-bold text-violet-900">
+      Manual invite link
+    </p>
+
+    <div className="mt-3 flex gap-2">
+      <input
+        readOnly
+        value={inviteLink}
+        className="h-11 flex-1 rounded-xl border border-violet-200 bg-white px-3 text-sm font-medium text-slate-700"
+      />
+
+      <button
+        onClick={() => navigator.clipboard.writeText(inviteLink)}
+        className="rounded-xl bg-violet-600 px-4 text-sm font-bold text-white hover:bg-violet-700"
+      >
+        Copy
+      </button>
+    </div>
+
+    <p className="mt-2 text-xs font-medium text-violet-700">
+      Email invitations are coming soon. For now, copy this link and send it manually.
+    </p>
+  </div>
+)}
+
+    <div className="space-y-3">
+      {members.map((member) => (
+  <div
+    key={member.id}
+    className="flex items-center justify-between rounded-2xl border border-slate-200 p-4"
+  >
+    <div>
+      <p className="font-bold text-slate-950">{member.email}</p>
+      <p className="text-sm font-medium text-slate-500">
+        {member.role === "owner" ? "Admin account" : "User account"}
+      </p>
+    </div>
+
+    <div className="flex items-center gap-3">
+      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+        Active
+      </span>
+
+      {isTeamOwner && member.role !== "owner" && (
+        <button
+          onClick={() => removeMember(member)}
+          className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
+        >
+          Remove
+        </button>
+      )}
+    </div>
+  </div>
+))}
+
+      {visibleInvites.map((invite) => (
+  <div
+    key={invite.id}
+    className="flex items-center justify-between rounded-2xl border border-orange-200 bg-orange-50 p-4"
+  >
+    <div>
+      <p className="font-bold text-slate-950">{invite.email}</p>
+      <p className="text-sm font-medium text-orange-700">
+        Invite pending
+      </p>
+    </div>
+
+    <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-orange-700">
+      Pending
+    </span>
+  </div>
+))}
+    </div>
+  </div>
+</section>
 
           <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
             <SectionTitle
@@ -329,8 +685,45 @@ export default function SettingsPage() {
           </section>
         </main>
 
-        <Footer />
+                <Footer />
       </div>
+
+      {showRemoveModal && memberToRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white p-6 shadow-2xl">
+            <h2 className="text-2xl font-bold text-slate-950">
+              Remove team member?
+            </h2>
+
+            <p className="mt-3 text-sm font-medium leading-6 text-slate-600">
+              This will remove{" "}
+              <span className="font-bold text-slate-950">
+                {memberToRemove.email}
+              </span>{" "}
+              from your team.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowRemoveModal(false)
+                  setMemberToRemove(null)
+                }}
+                className="h-11 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmRemoveMember}
+                className="h-11 rounded-2xl bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Remove Member
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

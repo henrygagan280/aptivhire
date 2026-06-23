@@ -282,7 +282,7 @@ async function analyseOneCandidate(
         {
           role: "system",
           content:
-            "You are AptivHire, an expert recruitment analyst. You must return strict valid JSON only.",
+            "You are Nuviq, an expert recruitment analyst. You must return strict valid JSON only.",
         },
         {
           role: "user",
@@ -493,7 +493,7 @@ Return ONLY valid JSON in this exact shape:
 export async function GET() {
   return NextResponse.json({
     success: true,
-    message: "AptivHire analyse API is working.",
+    message: "Nuviq analyse API is working.",
   })
 }
 

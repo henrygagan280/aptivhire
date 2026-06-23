@@ -1,28 +1,100 @@
-import { PLAN_LIMITS, type PlanId } from "./plans";
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { PLAN_LIMITS, type PlanId } from "./plans"
 
-export function canCreateJob(plan: PlanId, currentActiveJobs: number) {
-  const limit = PLAN_LIMITS[plan].activeJobs;
+export async function getUserTeam(supabase: SupabaseClient, userId: string) {
+  const { data: membership } = await supabase
+    .from("team_members")
+    .select("team_id")
+    .eq("user_id", userId)
+    .maybeSingle()
 
-  if (limit === null) return true;
+  if (!membership?.team_id) return null
 
-  return currentActiveJobs < limit;
+  const { data: team } = await supabase
+    .from("teams")
+    .select("*")
+    .eq("id", membership.team_id)
+    .single()
+
+  return team
 }
 
-export function canAnalyseCandidate(
-  plan: PlanId,
-  analysesUsedThisMonth: number
+export async function checkTeamLimits(
+  supabase: SupabaseClient,
+  userId: string
 ) {
-  const limit = PLAN_LIMITS[plan].candidateAnalysesPerMonth;
+  const team = await getUserTeam(supabase, userId)
 
-  if (limit === null) return true;
+  if (!team) {
+    return {
+      allowed: false,
+      reason: "No team found.",
+      team: null,
+      limits: PLAN_LIMITS.solo,
+      usage: null,
+    }
+  }
 
-  return analysesUsedThisMonth < limit;
+  const plan = (team.plan || "solo") as PlanId
+  const limits = PLAN_LIMITS[plan]
+
+  const [
+    jobsRes,
+    membersRes,
+    invitesRes,
+    usageRes,
+  ] = await Promise.all([
+    supabase
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", team.id),
+
+    supabase
+      .from("team_members")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", team.id),
+
+    supabase
+      .from("team_invites")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", team.id)
+      .eq("status", "pending"),
+
+    supabase
+      .from("subscription_usage")
+      .select("analyses_used")
+      .eq("team_id", team.id)
+      .eq("month", new Date().toISOString().slice(0, 7))
+      .single(),
+  ])
+
+  const usage = {
+    jobs: jobsRes.count || 0,
+    members: membersRes.count || 0,
+    invites: invitesRes.count || 0,
+    analysed: usageRes.data?.analyses_used || 0,
+  }
+
+  return {
+    allowed: true,
+    reason: "",
+    team,
+    limits,
+    usage,
+  }
 }
 
-export function canInviteUser(plan: PlanId, currentUsers: number) {
-  const limit = PLAN_LIMITS[plan].users;
+export function canCreateJob(limits: any, usage: any) {
+  if (limits.activeJobs === null) return true
+  return usage.jobs < limits.activeJobs
+}
 
-  if (limit === null) return true;
+export function canAnalyseCandidate(limits: any, usage: any) {
+  if (limits.candidateAnalysesPerMonth === null) return true
+  return usage.analysed < limits.candidateAnalysesPerMonth
+}
 
-  return currentUsers < limit;
+export function canInviteUser(limits: any, usage: any) {
+  if (limits.users === null) return true
+  return usage.members + usage.invites < limits.users
 }

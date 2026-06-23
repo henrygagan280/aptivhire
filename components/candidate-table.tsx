@@ -72,6 +72,44 @@ export function CandidateTable({ candidates }: { candidates: any[] }) {
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [senderEmail, setSenderEmail] = useState("recruiter@aptivhire.net")
+  const [openMenuRank, setOpenMenuRank] = useState<number | null>(null)
+  const [toastMessage, setToastMessage] = useState("")
+
+const showToast = (message: string) => {
+  setToastMessage(message)
+
+  setTimeout(() => {
+    setToastMessage("")
+  }, 2500)
+}
+
+const copyCandidateEmail = async (candidate: any) => {
+  if (!candidate.email) {
+    showToast("No email found for this candidate.")
+    return
+  }
+
+  await navigator.clipboard.writeText(candidate.email)
+  showToast("Candidate email copied.")
+}
+
+const downloadCandidateJson = (candidate: any) => {
+  const blob = new Blob(
+    [JSON.stringify(candidate, null, 2)],
+    { type: "application/json" }
+  )
+
+  const url = URL.createObjectURL(blob)
+
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `${candidate.candidateName || "candidate"}-profile.json`
+  link.click()
+
+  URL.revokeObjectURL(url)
+
+  showToast("Candidate profile downloaded.")
+}
 
   const [rejectSubject, setRejectSubject] = useState("Update on your application")
   const [rejectBody, setRejectBody] = useState(`Hi {{candidateName}},
@@ -167,6 +205,13 @@ The Hiring Team`)
   }
 
   return (
+  <>
+    {toastMessage && (
+      <div className="fixed right-6 top-6 z-[9999] rounded-2xl border border-violet-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-xl">
+        {toastMessage}
+      </div>
+    )}
+
     <Card className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 bg-gradient-to-r from-white via-violet-50/40 to-white p-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
@@ -369,9 +414,9 @@ The Hiring Team`)
               <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Missing Skills
               </TableHead>
-              <TableHead className="text-right text-xs font-bold uppercase tracking-wider text-slate-500">
-                Actions
-              </TableHead>
+              <TableHead className="sticky right-0 z-30 bg-slate-50 text-right text-xs font-bold uppercase tracking-wider text-slate-500 shadow-[-12px_0_18px_-18px_rgba(15,23,42,0.45)]">
+  Actions
+</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -537,8 +582,8 @@ The Hiring Team`)
                     </ul>
                   </TableCell>
 
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
+                  <TableCell className="sticky right-0 z-20 bg-white text-right shadow-[-12px_0_18px_-18px_rgba(15,23,42,0.45)]">
+  <div className="flex min-w-[120px] items-center justify-end gap-1">
                       <Link
   
   href={`/candidates/${candidate.candidateKey || rank}?rank=${rank}`}
@@ -553,20 +598,85 @@ The Hiring Team`)
                       </Link>
 
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 rounded-xl text-slate-400 hover:bg-violet-50 hover:text-violet-700"
-                      >
-                        <Mail className="h-4 w-4" />
-                      </Button>
+  variant="ghost"
+  size="icon"
+  onClick={() => {
+  if (!rank) return
+  setSelectedCandidates([rank])
+  setShowInviteModal(true)
+}}
+  className="h-9 w-9 rounded-xl text-slate-400 hover:bg-violet-50 hover:text-violet-700"
+>
+  <Mail className="h-4 w-4" />
+</Button>
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 rounded-xl text-slate-400 hover:bg-violet-50 hover:text-violet-700"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      <div className="relative">
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={() =>
+      setOpenMenuRank(openMenuRank === rank ? null : rank)
+    }
+    className="h-9 w-9 rounded-xl text-slate-400 hover:bg-violet-50 hover:text-violet-700"
+  >
+    <MoreHorizontal className="h-4 w-4" />
+  </Button>
+
+  {openMenuRank === rank && (
+  <div className="absolute right-0 top-10 z-50 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+    <button
+      onClick={() => {
+        copyCandidateEmail(candidate)
+        setOpenMenuRank(null)
+      }}
+      className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+    >
+      Copy email
+    </button>
+
+    <Link
+      href={`/candidates/${candidate.candidateKey || rank}?rank=${rank}`}
+      className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+    >
+      View profile
+    </Link>
+
+    <button
+      onClick={() => {
+        if (!rank) return
+        setSelectedCandidates([rank])
+        setShowInviteModal(true)
+        setOpenMenuRank(null)
+      }}
+      className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+    >
+      Prepare invite
+    </button>
+
+    <button
+      onClick={() => {
+        if (!rank) return
+        setSelectedCandidates([rank])
+        setShowRejectModal(true)
+        setOpenMenuRank(null)
+      }}
+      className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
+    >
+      Prepare rejection
+    </button>
+
+    <button
+      onClick={() => {
+        downloadCandidateJson(candidate)
+        setOpenMenuRank(null)
+      }}
+      className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"
+    >
+      Download profile
+    </button>
+  </div>
+)}
+</div>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -658,6 +768,7 @@ The Hiring Team`)
         />
       )}
     </Card>
+    </>
   )
 }
 

@@ -1,5 +1,6 @@
 "use client"
 
+import { hasActiveSubscription } from "@/lib/subscription/check-client-subscription"
 import { Sidebar } from "@/components/sidebar"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -101,9 +102,16 @@ const [showNotifications, setShowNotifications] = useState(false)
 
   useEffect(() => {
   const loadAccountData = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+  const allowed = await hasActiveSubscription(supabase)
+
+  if (!allowed) {
+    window.location.href = "/subscription"
+    return
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
     if (!user) return
 
@@ -111,7 +119,7 @@ const [showNotifications, setShowNotifications] = useState(false)
       .from("team_members")
       .select("team_id")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
 
     if (!membership) return
 
@@ -311,6 +319,27 @@ const [showNotifications, setShowNotifications] = useState(false)
   const offers = candidates.filter((c) => c.candidateStatus === "Offer").length
   const rejected = candidates.filter((c) => c.candidateStatus === "Rejected").length
 
+  const deleteCandidate = async (candidate: Candidate) => {
+  if (!teamId) return
+
+  const candidateId = getCandidateId(candidate)
+
+  const { error } = await supabase
+    .from("pipeline")
+    .delete()
+    .eq("team_id", teamId)
+    .eq("candidate_id", candidateId)
+
+  if (error) {
+    console.error(error)
+    return
+  }
+
+  setCandidates((current) =>
+    current.filter((item) => getCandidateId(item) !== candidateId)
+  )
+}
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
@@ -474,11 +503,12 @@ const [showNotifications, setShowNotifications] = useState(false)
                     {columnCandidates.length ? (
                       columnCandidates.slice(0, 4).map((candidate) => (
                         <CandidateCard
-                          key={`${candidate.candidateId}-${candidate.candidateStatus}`}
-                          candidate={candidate}
-                          onMove={moveCandidate}
-                          onReplied={markReplied}
-                        />
+  key={`${candidate.candidateId}-${candidate.candidateStatus}`}
+  candidate={candidate}
+  onMove={moveCandidate}
+  onReplied={markReplied}
+  onDelete={deleteCandidate}
+/>
                       ))
                     ) : (
                       <div className="flex min-h-[120px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white text-sm font-medium text-slate-400">
@@ -545,10 +575,12 @@ function CandidateCard({
   candidate,
   onMove,
   onReplied,
+  onDelete,
 }: {
   candidate: Candidate
   onMove: (candidate: Candidate, status: CandidateStatus) => void
   onReplied: (candidate: Candidate) => void
+  onDelete: (candidate: Candidate) => void
 }) {
   const name = candidate.candidateName || candidate.name || "Unknown Candidate"
   const score = Number(candidate.score || 0)
@@ -626,13 +658,22 @@ function CandidateCard({
             Invite to Interview
           </button>
         ) : (
-          <button
-            onClick={() => onReplied(candidate)}
-            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            Mark replied
-          </button>
-        )}
+  <>
+    <button
+      onClick={() => onReplied(candidate)}
+      className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+    >
+      Mark replied
+    </button>
+
+    <button
+      onClick={() => onDelete(candidate)}
+      className="h-10 rounded-xl border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+    >
+      Delete from pipeline
+    </button>
+  </>
+)}
       </div>
     </div>
   )

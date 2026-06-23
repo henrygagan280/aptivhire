@@ -11,11 +11,32 @@ import type { PlanId } from "@/lib/subscription/plans"
 
 export default function SubscriptionPage() {
   const supabase = createClient()
-  const [currentPlan, setCurrentPlan] = useState<PlanId>("solo")
+  const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null)
 
   const handleChangePlan = async (planId: PlanId) => {
-    console.log("Selected plan:", planId)
+  try {
+    const response = await fetch(
+      "/api/stripe/create-checkout-session",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          plan: planId,
+        }),
+      }
+    )
+
+    const data = await response.json()
+
+    if (data.url) {
+      window.location.href = data.url
+    }
+  } catch (error) {
+    console.error(error)
   }
+}
 
   useEffect(() => {
     const loadPlan = async () => {
@@ -45,13 +66,13 @@ export default function SubscriptionPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-slate-600">
-            Upgrade AptivHire to unlock more jobs, more candidate analyses, and
+            Upgrade Nuviq to unlock more jobs, more candidate analyses, and
             team collaboration.
           </p>
 
           <div className="mt-5 inline-flex rounded-full bg-violet-100 px-4 py-2 text-sm font-semibold text-violet-700">
             Current plan:{" "}
-            {PLAN_LIMITS[currentPlan].name}
+{currentPlan ? PLAN_LIMITS[currentPlan].name : "No Plan Selected"}
           </div>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-3">
@@ -117,9 +138,11 @@ export default function SubscriptionPage() {
   onClick={() => handleChangePlan(plan.id)}
   className="mt-6 h-12 w-full rounded-2xl bg-violet-600 text-sm font-semibold text-white hover:bg-violet-700"
 >
-  {isPlanUpgrade(currentPlan, plan.id)
+  {currentPlan
+  ? isPlanUpgrade(currentPlan, plan.id)
     ? `Upgrade to ${plan.name}`
-    : `Switch to ${plan.name}`}
+    : `Switch to ${plan.name}`
+  : `Choose ${plan.name}`}
 </button>
                   )}
 

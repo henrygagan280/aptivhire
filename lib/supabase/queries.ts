@@ -18,7 +18,7 @@ export async function getCurrentUserAndTeam() {
     .from("team_members")
     .select("team_id")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   return {
     user,

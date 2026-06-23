@@ -22,7 +22,7 @@ export function Footer() {
           </Link>
         </nav>
 
-        <p className="text-sm text-muted-foreground">© 2025 AptivHire</p>
+        <p className="text-sm text-muted-foreground">© 2026 Nuviq</p>
       </div>
     </footer>
   )

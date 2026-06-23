@@ -1,5 +1,6 @@
 "use client"
 
+import { hasActiveSubscription } from "@/lib/subscription/check-client-subscription"
 import TopCandidatesPodium from "@/components/top-candidates-podium"
 import { UploadCloud, Star, Download, Send } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -38,6 +39,8 @@ export default function CandidateRankingsPage() {
   const [jobUrlError, setJobUrlError] = useState("")
   const supabase = createClient()
 
+  
+
   const loadSavedJobs = async () => {
   const {
     data: { user },
@@ -49,7 +52,7 @@ export default function CandidateRankingsPage() {
     .from("team_members")
     .select("team_id")
     .eq("user_id", user.id)
-    .single()
+    .maybeSingle()
 
   if (membershipError || !membership) {
     console.error("Could not load team membership:", membershipError)
@@ -81,10 +84,24 @@ export default function CandidateRankingsPage() {
 }
 
   useEffect(() => {
-  const savedResults = localStorage.getItem("aptivhire-results")
-  if (savedResults) setResults(JSON.parse(savedResults))
+  async function initializePage() {
+    const allowed = await hasActiveSubscription(supabase)
 
-  loadSavedJobs()
+    if (!allowed) {
+      window.location.href = "/subscription"
+      return
+    }
+
+    const savedResults = localStorage.getItem("aptivhire-results")
+
+    if (savedResults) {
+      setResults(JSON.parse(savedResults))
+    }
+
+    loadSavedJobs()
+  }
+
+  initializePage()
 }, [])
 
   useEffect(() => {
@@ -159,6 +176,10 @@ export default function CandidateRankingsPage() {
       jobs_created: 0,
     })
 
+    window.dispatchEvent(
+  new Event("usage-updated")
+)
+
     return
   }
 
@@ -168,6 +189,9 @@ export default function CandidateRankingsPage() {
       analyses_used: existing.analyses_used + amount,
     })
     .eq("id", existing.id)
+    window.dispatchEvent(
+  new Event("usage-updated")
+)
 }
 
   async function handleAnalyse() {
@@ -238,7 +262,7 @@ if (user) {
     .from("team_members")
     .select("team_id")
     .eq("user_id", user.id)
-    .single()
+    .maybeSingle()
 
   if (membership) {
     await supabase.from("candidates").upsert(
@@ -297,7 +321,7 @@ if (usageUser) {
     .from("team_members")
     .select("team_id")
     .eq("user_id", usageUser.id)
-    .single()
+    .maybeSingle()
 
   if (usageMembership?.team_id) {
     await incrementAnalysesUsed(
@@ -361,7 +385,7 @@ const safeJobTitle =
 
       doc.setTextColor(255, 255, 255)
       doc.setFontSize(20)
-      doc.text("AptivHire Shortlist Report", 14, 17)
+      doc.text("Nuviq Shortlist Report", 14, 17)
 
       doc.setFontSize(10)
       doc.text("Job: " + safeJobTitle, 14, 27)
@@ -396,7 +420,7 @@ const safeJobTitle =
         },
       })
 
-      zip.file("AptivHire-Shortlist-Report.pdf", doc.output("blob"))
+      zip.file("Nuviq-Shortlist-Report.pdf", doc.output("blob"))
 
       const csvRows = [
         [
@@ -473,7 +497,7 @@ const safeJobTitle =
         "td{border-bottom:1px solid #e5e7eb;padding:12px;}" +
         "</style></head><body>" +
         "<div class='card'>" +
-        "<h1>AptivHire Shortlist Report</h1>" +
+        "<h1>Nuviq Shortlist Report</h1>" +
         "<p><strong>Job:</strong> " +
         safeJobTitle +
         "</p>" +
@@ -494,7 +518,7 @@ const safeJobTitle =
 
       zip.file(
         "README.txt",
-        "AptivHire Shortlist Export\n\nIncluded files:\n- AptivHire-Shortlist-Report.pdf\n- shortlist.csv\n- shortlist.json\n- shortlist.html\n- job-details.txt\n"
+        "Nuviq Shortlist Export\n\nIncluded files:\n- Nuviq-Shortlist-Report.pdf\n- shortlist.csv\n- shortlist.json\n- shortlist.html\n- job-details.txt\n"
       )
 
       const blob = await zip.generateAsync({ type: "blob" })
@@ -531,7 +555,7 @@ const safeJobTitle =
   const shortlist = sorted.slice(0, 5)
 
   const shareText =
-    `AptivHire Candidate Shortlist\n\n` +
+    `Nuviq Candidate Shortlist\n\n` +
     `Role: ${safeJobTitle}\n` +
     `Candidates analysed: ${results.length}\n\n` +
     shortlist
@@ -548,7 +572,7 @@ const safeJobTitle =
   try {
     if (navigator.share) {
       await navigator.share({
-        title: `AptivHire Shortlist: ${safeJobTitle}`,
+        title: `Nuviq Shortlist: ${safeJobTitle}`,
         text: shareText,
       })
       return
@@ -559,7 +583,7 @@ const safeJobTitle =
   } catch (error) {
     console.error(error)
 
-    const subject = encodeURIComponent(`AptivHire Shortlist: ${safeJobTitle}`)
+    const subject = encodeURIComponent(`Nuviq Shortlist: ${safeJobTitle}`)
     const body = encodeURIComponent(shareText)
 
     window.location.href = `mailto:?subject=${subject}&body=${body}`
@@ -580,7 +604,7 @@ const safeJobTitle =
                 Candidate Ranking Report
               </h1>
               <p className="mt-3 max-w-3xl text-base font-medium leading-7 text-slate-600">
-                Upload CVs, connect them to a role and let AptivHire rank the strongest applicants.
+                Upload CVs, connect them to a role and let Nuviq rank the strongest applicants.
               </p>
             </div>
 
@@ -730,7 +754,7 @@ const safeJobTitle =
 
                 <p className="mt-2 max-w-md text-sm font-medium leading-6 text-slate-500">
                   Upload PDF, DOCX, ZIP folders, or optional CSV metadata.
-                  AptivHire will extract, score and rank every candidate.
+                  Nuviq will extract, score and rank every candidate.
                 </p>
 
                 <div className="mt-6 rounded-2xl border border-violet-200 bg-white px-5 py-2.5 text-sm font-semibold text-violet-700 shadow-sm transition group-hover:border-violet-300 group-hover:bg-violet-50">
@@ -787,7 +811,7 @@ const safeJobTitle =
               </button>
 
               <p className="text-sm font-medium text-slate-500">
-                AptivHire will extract, score and rank all candidates.
+                Nuviq will extract, score and rank all candidates.
               </p>
             </div>
           </section>

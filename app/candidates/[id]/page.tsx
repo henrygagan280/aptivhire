@@ -103,7 +103,7 @@ const [teamId, setTeamId] = useState<string | null>(null)
         .from("team_members")
         .select("team_id")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
       if (membership) {
         let dbCandidate = null
@@ -217,7 +217,7 @@ setCandidate(foundCandidate || fallbackFromUrl)
       .from("team_members")
       .select("team_id")
       .eq("user_id", user.id)
-      .single()
+      .maybeSingle()
 
     if (!membership) return
 
@@ -527,7 +527,7 @@ localStorage.setItem("aptivhire-activity", JSON.stringify([activity]))
     goodFitReasons.length
       ? goodFitReasons
       : score >= 50
-        ? ["There may be some relevant experience, but AptivHire did not extract enough strong evidence to list specific fit reasons."]
+        ? ["There may be some relevant experience, but Nuviq did not extract enough strong evidence to list specific fit reasons."]
         : ["No strong fit reasons were identified for this role."]
   }
 />
@@ -540,7 +540,7 @@ localStorage.setItem("aptivhire-activity", JSON.stringify([activity]))
     badFitReasons.length
       ? badFitReasons
       : score < 50
-        ? ["The candidate appears to be a weak match for this role, but AptivHire did not extract detailed concern points from the CV."]
+        ? ["The candidate appears to be a weak match for this role, but Nuviq did not extract detailed concern points from the CV."]
         : ["No major concerns were identified from the available CV evidence."]
   }
 />
@@ -1205,7 +1205,7 @@ const technicalQuestions = generateTechnicalQuestions(candidate, matchedSkills)
 
       <body>
         <div class="page">
-          <h1>AptivHire Interview Preparation Report</h1>
+          <h1>Nuviq Interview Preparation Report</h1>
           <p>Generated for recruiter interview preparation.</p>
 
           <div class="meta">

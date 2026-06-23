@@ -9,7 +9,7 @@ import "@fontsource/inter/900.css"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "AptivHire",
+  title: "Nuviq",
   description: "AI-powered candidate ranking platform",
 }
 
