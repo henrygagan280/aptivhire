@@ -4,7 +4,7 @@ import { hasActiveSubscription } from "@/lib/subscription/check-client-subscript
 import { createClient } from "@/lib/supabase/browser"
 
 import { Sidebar } from "@/components/sidebar"
-
+import { checkTeamLimits } from "@/lib/subscription/check-limits"
 
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -130,7 +130,16 @@ console.log("teamId =", teamId)
 const userPlan = await getCurrentPlan(supabase, user.id)
 const limits = PLAN_LIMITS[userPlan]
 
-const currentActiveJobs = jobs.length
+const month = new Date().toISOString().slice(0, 7)
+
+const { data: usage } = await supabase
+  .from("subscription_usage")
+  .select("jobs_created")
+  .eq("team_id", teamId)
+  .eq("month", month)
+  .maybeSingle()
+
+const currentActiveJobs = usage?.jobs_created ?? 0
 
 if (
   limits.activeJobs !== null &&
@@ -166,6 +175,32 @@ if (
   }
 
   if (data) {
+    const month = new Date().toISOString().slice(0, 7)
+
+const { data: usage } = await supabase
+  .from("subscription_usage")
+  .select("*")
+  .eq("team_id", teamId)
+  .eq("month", month)
+  .maybeSingle()
+
+if (!usage) {
+  await supabase.from("subscription_usage").insert({
+    team_id: teamId,
+    month,
+    analyses_used: 0,
+    jobs_created: 1,
+  })
+} else {
+  await supabase
+    .from("subscription_usage")
+    .update({
+      jobs_created: usage.jobs_created + 1,
+    })
+    .eq("id", usage.id)
+}
+
+window.dispatchEvent(new Event("usage-updated"))
     setJobs([
       {
         id: data.id,
@@ -191,6 +226,8 @@ if (
 }
 
   const deleteJob = async (id: string) => {
+  if (!teamId) return
+
   const { error } = await supabase
     .from("jobs")
     .delete()
@@ -202,7 +239,27 @@ if (
     return
   }
 
+  const month = new Date().toISOString().slice(0, 7)
+
+  const { data: usage } = await supabase
+    .from("subscription_usage")
+    .select("id, jobs_created")
+    .eq("team_id", teamId)
+    .eq("month", month)
+    .maybeSingle()
+
+  if (usage) {
+    await supabase
+      .from("subscription_usage")
+      .update({
+        jobs_created: Math.max((usage.jobs_created || 0) - 1, 0),
+      })
+      .eq("id", usage.id)
+  }
+
   setJobs(jobs.filter((job) => job.id !== id))
+
+  window.dispatchEvent(new Event("usage-updated"))
 }
 
   const connectedProviders = integrations.filter((item) => item.connected)
