@@ -1,14 +1,22 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/browser";
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupPageContent />
+    </Suspense>
+  );
+}
+
+function SignupPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-const inviteToken = searchParams.get("invite_token");
+  const inviteToken = searchParams.get("invite_token");
 
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
@@ -46,20 +54,20 @@ const inviteToken = searchParams.get("invite_token");
     }
 
     if (inviteToken) {
-  setNotice("Account created. Please sign in to accept your invite.");
+      setNotice("Account created. Please sign in to accept your invite.");
 
-  setTimeout(() => {
-    router.push(`/login?invite_token=${inviteToken}`);
-  }, 1000);
+      setTimeout(() => {
+        router.push(`/login?invite_token=${inviteToken}`);
+      }, 1000);
 
-  return;
-}
+      return;
+    }
 
-setNotice("Account created. Choose a plan to continue.");
+    setNotice("Account created. Choose a plan to continue.");
 
-setTimeout(() => {
-  router.push("/subscription");
-}, 1000);
+    setTimeout(() => {
+      router.push("/subscription");
+    }, 1000);
   }
 
   return (
