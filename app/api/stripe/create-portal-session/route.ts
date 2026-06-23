@@ -29,15 +29,24 @@ export async function POST() {
     .eq("id", membership.team_id)
     .single()
 
-  if (!team?.stripe_customer_id) {
+  const stripeCustomerId = team?.stripe_customer_id
+
+  if (
+    !stripeCustomerId ||
+    stripeCustomerId === "NULL" ||
+    stripeCustomerId === "null"
+  ) {
     return NextResponse.json(
-      { error: "No Stripe customer found" },
+      {
+        error:
+          "No active Stripe subscription found. Please choose a plan first.",
+      },
       { status: 400 }
     )
   }
 
   const session = await stripe.billingPortal.sessions.create({
-    customer: team.stripe_customer_id,
+    customer: stripeCustomerId,
     return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings`,
   })
 

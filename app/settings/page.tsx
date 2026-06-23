@@ -265,18 +265,25 @@ setInvites(updatedInvites || [])
 }
 
 const openBillingPortal = async () => {
-  const response = await fetch("/api/stripe/create-portal-session", {
-    method: "POST",
-  })
+  try {
+    const response = await fetch("/api/stripe/create-portal-session", {
+      method: "POST",
+    })
 
-  const data = await response.json()
+    const text = await response.text()
 
-  if (!response.ok) {
-    setSavedMessage(data.error || "Could not open billing portal.")
-    return
+    if (!response.ok) {
+      setSavedMessage("No active subscription found.")
+      return
+    }
+
+    const data = JSON.parse(text)
+
+    window.location.href = data.url
+  } catch (error) {
+    console.error(error)
+    setSavedMessage("Could not open billing portal.")
   }
-
-  window.location.href = data.url
 }
 
   const saveSettings = async () => {
@@ -450,13 +457,24 @@ const openBillingPortal = async () => {
   />
 </div>
 
-                  <button
-  onClick={openBillingPortal}
-  className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition hover:bg-violet-700"
->
-  <CreditCard size={17} />
-  Manage / Cancel Subscription
-</button>
+                  {team?.stripe_customer_id &&
+ team?.subscription_status === "active" ? (
+  <button
+    onClick={openBillingPortal}
+    className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition hover:bg-violet-700"
+  >
+    <CreditCard size={17} />
+    Manage / Cancel Subscription
+  </button>
+) : (
+  <Link
+    href="/pricing"
+    className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition hover:bg-violet-700"
+  >
+    <CreditCard size={17} />
+    Choose a Plan
+  </Link>
+)}
                 </div>
               </div>
             </section>
