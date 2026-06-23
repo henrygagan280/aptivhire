@@ -12,6 +12,7 @@ import { ScoreLegend } from "@/components/score-legend"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/browser"
+import { checkTeamLimits } from "@/lib/subscription/check-limits"
 
 type SavedJob = {
   id: string
@@ -219,16 +220,40 @@ export default function CandidateRankingsPage() {
   }
 
   async function handleAnalyse() {
-    setError("")
 
-    if (!jobTitle || !jobDescription || files.length === 0) {
-      setError("Add a job title, job description and at least one CV file.")
-      return
-    }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    setLoading(true)
-    setCompleted(0)
-    setTotal(files.length)
+  if (!user) {
+    setError("You must be logged in to analyse candidates.")
+    return
+  }
+
+  const { allowed, limits, usage } =
+    await checkTeamLimits(supabase, user.id)
+
+  if (!allowed || !usage) {
+    setError("Could not check your plan limits.")
+    return
+  }
+
+  if (
+    limits.candidateAnalysesPerMonth !== null &&
+    usage.analysed + files.length >
+      limits.candidateAnalysesPerMonth
+  ) {
+    setError(
+      "You have reached your monthly candidate analysis limit."
+    )
+    return
+  }
+
+  setLoading(true)
+  setCompleted(0)
+  setTotal(files.length)
+
+  
 
     const progressInterval = setInterval(async () => {
       const statusRes = await fetch("/api/analyse-status")
