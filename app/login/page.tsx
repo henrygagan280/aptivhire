@@ -1,9 +1,17 @@
 "use client"
 
-import { FormEvent, ReactNode, Suspense, useState, type CSSProperties } from "react"
+import { FormEvent, ReactNode, Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { BarChart3, CalendarDays, CheckSquare, Lock, Mail } from "lucide-react"
+import {
+  ArrowRight,
+  BarChart3,
+  CalendarDays,
+  CheckCircle2,
+  Lock,
+  Mail,
+  Users,
+} from "lucide-react"
 import { createClient } from "@/lib/supabase/browser"
 
 export default function LoginPage() {
@@ -100,322 +108,164 @@ function LoginPageContent() {
   }
 
   return (
-    <main style={pageStyle}>
-      <section style={shellStyle}>
-        <div style={brandPanelStyle}>
-          <div style={logoRowStyle}>
-            <div style={logoMarkStyle}>N</div>
-            <div>
-              <div style={brandNameStyle}>Nuviq</div>
-              <div style={brandSubStyle}>Recruitment intelligence</div>
-            </div>
-          </div>
+    <main className="min-h-screen overflow-hidden bg-black px-6 py-8 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(167,139,250,0.24),transparent_32%),radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.10),transparent_28%),linear-gradient(135deg,#050505_0%,#12071f_45%,#000_100%)]" />
+      <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:48px_48px]" />
 
-          <div style={heroStyle}>
-            <div style={pillStyle}>Welcome back</div>
-
-            <h1 style={heroTitleStyle}>Your hiring workspace, ready when you are.</h1>
-
-            <p style={heroTextStyle}>
-              Sign in to review candidates, manage pipelines, schedule interviews, and keep your hiring process moving.
-            </p>
-
-            <div style={featureListStyle}>
-              <Feature
-                icon={<CheckSquare size={18} />}
-                title="Candidate analysis"
-                text="Review and rank applicants faster."
-              />
-              <Feature
-                icon={<BarChart3 size={18} />}
-                title="Hiring pipelines"
-                text="Track every candidate clearly."
-              />
-              <Feature
-                icon={<CalendarDays size={18} />}
-                title="Interview scheduling"
-                text="Sync calendars and create meetings."
-              />
-            </div>
-          </div>
-        </div>
-
-        <div style={formPanelStyle}>
-          <form onSubmit={handleLogin} style={formStyle}>
-            <div>
-              <h2 style={formTitleStyle}>Sign in</h2>
-              <p style={formTextStyle}>Enter your details to access your Nuviq workspace.</p>
-            </div>
-
-            <div style={fieldsStyle}>
+      <div className="relative mx-auto flex min-h-[calc(100vh-64px)] w-full max-w-6xl items-center justify-center">
+        <div className="grid w-full overflow-hidden rounded-[34px] border border-white/10 bg-white/[0.03] shadow-[0_30px_100px_rgba(0,0,0,0.55)] backdrop-blur-xl lg:grid-cols-[1fr_0.9fr]">
+          <section className="hidden border-r border-white/10 bg-black/35 p-10 lg:block">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-lg font-black text-black">
+                N
+              </div>
               <div>
-                <label style={labelStyle}>Email address</label>
-                <div style={inputBoxStyle}>
-                  <Mail size={17} color="#475569" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@example.com"
-                    style={inputStyle}
-                  />
-                </div>
+                <p className="text-2xl font-black tracking-[-0.04em]">
+                  Nuviq
+                </p>
+                <p className="text-xs font-semibold text-white/55">
+                  AI recruitment software
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-24 max-w-lg">
+              <p className="mb-5 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-white/80">
+                Welcome back
+              </p>
+
+              <h1 className="text-6xl font-black leading-[0.95] tracking-[-0.07em] text-[#F1FFE8]">
+                Continue hiring smarter.
+              </h1>
+
+              <p className="mt-6 max-w-md text-base leading-7 text-white/70">
+                Sign in to review candidates, manage pipelines, schedule
+                interviews and keep your recruitment moving.
+              </p>
+
+              <div className="mt-12 space-y-5">
+                <Feature
+                  icon={<CheckCircle2 size={18} />}
+                  title="AI candidate analysis"
+                  text="Review and rank applicants faster."
+                />
+                <Feature
+                  icon={<BarChart3 size={18} />}
+                  title="Hiring pipelines"
+                  text="Track every candidate clearly."
+                />
+                <Feature
+                  icon={<CalendarDays size={18} />}
+                  title="Interview scheduling"
+                  text="Sync calendars and create meetings."
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="flex items-center justify-center p-6 sm:p-10">
+            <div className="w-full max-w-md rounded-[28px] border border-white/12 bg-white/[0.06] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+              <div className="mb-8">
+                <p className="text-sm font-bold uppercase tracking-[0.22em] text-white/50">
+                  Get started
+                </p>
+                <h2 className="mt-3 text-4xl font-black tracking-[-0.055em] text-white">
+                  Sign in
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-white/55">
+                  Enter your details to access your Nuviq workspace.
+                </p>
               </div>
 
-              <div>
-                <label style={labelStyle}>Password</label>
-                <div style={inputBoxStyle}>
-                  <Lock size={17} color="#475569" />
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="••••••••"
-                    style={inputStyle}
-                  />
-                </div>
-              </div>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <InputField
+                  label="Email address"
+                  type="email"
+                  icon={<Mail size={17} />}
+                  value={email}
+                  onChange={setEmail}
+                  required
+                />
 
-              {removed && <p style={alertStyle}>Your access to this workspace has been removed.</p>}
+                <InputField
+                  label="Password"
+                  type="password"
+                  icon={<Lock size={17} />}
+                  value={password}
+                  onChange={setPassword}
+                  required
+                />
 
-              {errorMessage && <p style={alertStyle}>{errorMessage}</p>}
+                {removed && (
+                  <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-200">
+                    Your access to this workspace has been removed.
+                  </p>
+                )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  ...signInButtonStyle,
-                  opacity: loading ? 0.7 : 1,
-                  cursor: loading ? "not-allowed" : "pointer",
-                }}
-              >
-                {loading ? "Signing in..." : "Sign in"}
-              </button>
+                {errorMessage && (
+                  <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-200">
+                    {errorMessage}
+                  </p>
+                )}
 
-              <p style={signupTextStyle}>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-black text-black shadow-[0_18px_40px_rgba(255,255,255,0.12)] transition hover:bg-[#F1FFE8] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? "Signing in..." : "Sign in"}
+                  {!loading && <ArrowRight size={17} />}
+                </button>
+              </form>
+
+              <p className="mt-6 text-center text-sm text-white/55">
                 Don&apos;t have an account?{" "}
-                <Link href="/signup" style={signupLinkStyle}>
+                <Link href="/signup" className="font-black text-white">
                   Sign up
                 </Link>
               </p>
             </div>
-          </form>
+          </section>
         </div>
-      </section>
+      </div>
     </main>
   )
 }
 
-const pageStyle: CSSProperties = {
-  minHeight: "100vh",
-  padding: "28px",
-  color: "#0F172A",
-  fontFamily: "Inter, system-ui, sans-serif",
-  background:
-    "radial-gradient(circle at top left, rgba(99,102,241,0.10), transparent 30%), radial-gradient(circle at bottom right, rgba(15,23,42,0.08), transparent 28%), linear-gradient(135deg, #F8FAFC 0%, #EEF2F7 100%)",
-}
+function InputField({
+  label,
+  icon,
+  value,
+  onChange,
+  type = "text",
+  required = false,
+}: {
+  label: string
+  icon: ReactNode
+  value: string
+  onChange: (value: string) => void
+  type?: string
+  required?: boolean
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-bold text-white/80">
+        {label}
+      </span>
 
-const shellStyle: CSSProperties = {
-  width: "100%",
-  maxWidth: "1120px",
-  minHeight: "700px",
-  margin: "0 auto",
-  display: "grid",
-  gridTemplateColumns: "1fr 0.92fr",
-  overflow: "hidden",
-  borderRadius: "28px",
-  border: "1px solid rgba(148,163,184,0.35)",
-  background: "rgba(255,255,255,0.88)",
-  boxShadow: "0 30px 80px rgba(15,23,42,0.14)",
-}
+      <div className="flex h-12 items-center gap-3 rounded-2xl border border-white/12 bg-black/35 px-4 transition focus-within:border-white/40 focus-within:bg-black/50 focus-within:ring-4 focus-within:ring-white/5">
+        <span className="text-white/45">{icon}</span>
 
-const brandPanelStyle: CSSProperties = {
-  position: "relative",
-  padding: "48px",
-  borderRight: "1px solid rgba(148,163,184,0.26)",
-  background:
-    "linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 45%, #EEF2F7 100%)",
-}
-
-const logoRowStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "14px",
-}
-
-const logoMarkStyle: CSSProperties = {
-  width: "40px",
-  height: "40px",
-  borderRadius: "13px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "linear-gradient(135deg, #111827, #334155)",
-  color: "#FFFFFF",
-  fontSize: "17px",
-  fontWeight: 900,
-  boxShadow: "0 16px 34px rgba(15,23,42,0.18)",
-}
-
-const brandNameStyle: CSSProperties = {
-  fontSize: "22px",
-  fontWeight: 900,
-  letterSpacing: "-0.03em",
-  color: "#0F172A",
-}
-
-const brandSubStyle: CSSProperties = {
-  marginTop: "2px",
-  color: "#64748B",
-  fontSize: "12px",
-  fontWeight: 650,
-}
-
-const heroStyle: CSSProperties = {
-  marginTop: "92px",
-  maxWidth: "500px",
-}
-
-const pillStyle: CSSProperties = {
-  width: "fit-content",
-  borderRadius: "999px",
-  border: "1px solid rgba(148,163,184,0.45)",
-  background: "#FFFFFF",
-  color: "#334155",
-  padding: "7px 12px",
-  fontSize: "12px",
-  fontWeight: 800,
-  boxShadow: "0 8px 22px rgba(15,23,42,0.06)",
-}
-
-const heroTitleStyle: CSSProperties = {
-  margin: "22px 0 0",
-  fontSize: "44px",
-  lineHeight: 1.04,
-  letterSpacing: "-0.055em",
-  fontWeight: 950,
-  color: "#0F172A",
-}
-
-const heroTextStyle: CSSProperties = {
-  margin: "22px 0 0",
-  maxWidth: "430px",
-  color: "#475569",
-  fontSize: "15px",
-  lineHeight: 1.75,
-}
-
-const featureListStyle: CSSProperties = {
-  marginTop: "46px",
-  display: "grid",
-  gap: "16px",
-}
-
-const formPanelStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "48px",
-  background:
-    "linear-gradient(180deg, rgba(248,250,252,0.88), rgba(255,255,255,0.96))",
-}
-
-const formStyle: CSSProperties = {
-  width: "100%",
-  maxWidth: "420px",
-  borderRadius: "24px",
-  border: "1px solid rgba(148,163,184,0.36)",
-  background: "#FFFFFF",
-  padding: "38px",
-  boxShadow: "0 22px 60px rgba(15,23,42,0.10)",
-}
-
-const formTitleStyle: CSSProperties = {
-  margin: 0,
-  fontSize: "30px",
-  lineHeight: 1.1,
-  letterSpacing: "-0.045em",
-  fontWeight: 950,
-  color: "#0F172A",
-}
-
-const formTextStyle: CSSProperties = {
-  margin: "10px 0 0",
-  color: "#64748B",
-  fontSize: "13px",
-  lineHeight: 1.6,
-}
-
-const fieldsStyle: CSSProperties = {
-  marginTop: "30px",
-  display: "grid",
-  gap: "20px",
-}
-
-const labelStyle: CSSProperties = {
-  display: "block",
-  marginBottom: "8px",
-  color: "#334155",
-  fontSize: "12px",
-  fontWeight: 850,
-}
-
-const inputBoxStyle: CSSProperties = {
-  height: "48px",
-  display: "flex",
-  alignItems: "center",
-  gap: "12px",
-  borderRadius: "14px",
-  border: "1px solid rgba(148,163,184,0.45)",
-  background: "#F8FAFC",
-  padding: "0 14px",
-}
-
-const inputStyle: CSSProperties = {
-  width: "100%",
-  border: "none",
-  outline: "none",
-  background: "transparent",
-  color: "#0F172A",
-  fontSize: "14px",
-}
-
-const alertStyle: CSSProperties = {
-  margin: 0,
-  borderRadius: "12px",
-  background: "#FEF2F2",
-  border: "1px solid #FECACA",
-  color: "#B91C1C",
-  padding: "10px 12px",
-  fontSize: "12px",
-  fontWeight: 750,
-  lineHeight: 1.5,
-}
-
-const signInButtonStyle: CSSProperties = {
-  height: "48px",
-  borderRadius: "14px",
-  border: "none",
-  background: "linear-gradient(135deg, #111827, #334155)",
-  color: "white",
-  fontSize: "14px",
-  fontWeight: 900,
-  boxShadow: "0 18px 34px rgba(15,23,42,0.18)",
-}
-
-const signupTextStyle: CSSProperties = {
-  margin: 0,
-  textAlign: "center",
-  color: "#64748B",
-  fontSize: "13px",
-}
-
-const signupLinkStyle: CSSProperties = {
-  color: "#111827",
-  fontWeight: 900,
-  textDecoration: "none",
+        <input
+          type={type}
+          required={required}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-full w-full border-none bg-transparent text-sm font-medium text-white outline-none placeholder:text-white/35"
+        />
+      </div>
+    </label>
+  )
 }
 
 function Feature({
@@ -428,46 +278,14 @@ function Feature({
   text: string
 }) {
   return (
-    <div style={featureStyle}>
-      <div style={featureIconStyle}>{icon}</div>
+    <div className="flex items-center gap-4">
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/12 bg-white/10 text-[#F1FFE8]">
+        {icon}
+      </div>
       <div>
-        <h3 style={featureTitleStyle}>{title}</h3>
-        <p style={featureTextStyle}>{text}</p>
+        <h3 className="text-sm font-black text-white">{title}</h3>
+        <p className="mt-1 text-xs leading-5 text-white/50">{text}</p>
       </div>
     </div>
   )
-}
-
-const featureStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "14px",
-}
-
-const featureIconStyle: CSSProperties = {
-  width: "42px",
-  height: "42px",
-  flex: "0 0 auto",
-  borderRadius: "14px",
-  border: "1px solid rgba(148,163,184,0.36)",
-  background: "#FFFFFF",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  color: "#334155",
-  boxShadow: "0 10px 24px rgba(15,23,42,0.06)",
-}
-
-const featureTitleStyle: CSSProperties = {
-  margin: 0,
-  fontSize: "14px",
-  fontWeight: 850,
-  color: "#0F172A",
-}
-
-const featureTextStyle: CSSProperties = {
-  margin: "4px 0 0",
-  color: "#64748B",
-  fontSize: "12px",
-  lineHeight: 1.5,
 }
