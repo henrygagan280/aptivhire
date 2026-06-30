@@ -114,12 +114,10 @@ function LoginPageContent() {
           <div style={heroStyle}>
             <div style={pillStyle}>Welcome back</div>
 
-            <h1 style={heroTitleStyle}>
-              Sign in and keep your hiring moving.
-            </h1>
+            <h1 style={heroTitleStyle}>Your hiring workspace, ready when you are.</h1>
 
             <p style={heroTextStyle}>
-              Access your workspace, review candidates, manage pipelines, and schedule interviews from one place.
+              Sign in to review candidates, manage pipelines, schedule interviews, and keep your hiring process moving.
             </p>
 
             <div style={featureListStyle}>
@@ -146,16 +144,14 @@ function LoginPageContent() {
           <form onSubmit={handleLogin} style={formStyle}>
             <div>
               <h2 style={formTitleStyle}>Sign in</h2>
-              <p style={formTextStyle}>
-                Enter your details to access your Nuviq workspace.
-              </p>
+              <p style={formTextStyle}>Enter your details to access your Nuviq workspace.</p>
             </div>
 
             <div style={fieldsStyle}>
               <div>
                 <label style={labelStyle}>Email address</label>
                 <div style={inputBoxStyle}>
-                  <Mail size={17} color="#8B5CF6" />
+                  <Mail size={17} color="#475569" />
                   <input
                     type="email"
                     required
@@ -170,7 +166,7 @@ function LoginPageContent() {
               <div>
                 <label style={labelStyle}>Password</label>
                 <div style={inputBoxStyle}>
-                  <Lock size={17} color="#8B5CF6" />
+                  <Lock size={17} color="#475569" />
                   <input
                     type="password"
                     required
@@ -182,11 +178,7 @@ function LoginPageContent() {
                 </div>
               </div>
 
-              {removed && (
-                <p style={alertStyle}>
-                  Your access to this workspace has been removed.
-                </p>
-              )}
+              {removed && <p style={alertStyle}>Your access to this workspace has been removed.</p>}
 
               {errorMessage && <p style={alertStyle}>{errorMessage}</p>}
 
@@ -219,32 +211,32 @@ function LoginPageContent() {
 const pageStyle: CSSProperties = {
   minHeight: "100vh",
   padding: "28px",
-  color: "#FFFFFF",
+  color: "#0F172A",
   fontFamily: "Inter, system-ui, sans-serif",
   background:
-    "radial-gradient(circle at top left, rgba(139,92,246,0.34), transparent 34%), radial-gradient(circle at bottom right, rgba(168,85,247,0.18), transparent 30%), #03040B",
+    "radial-gradient(circle at top left, rgba(99,102,241,0.10), transparent 30%), radial-gradient(circle at bottom right, rgba(15,23,42,0.08), transparent 28%), linear-gradient(135deg, #F8FAFC 0%, #EEF2F7 100%)",
 }
 
 const shellStyle: CSSProperties = {
   width: "100%",
-  maxWidth: "1180px",
-  minHeight: "720px",
+  maxWidth: "1120px",
+  minHeight: "700px",
   margin: "0 auto",
   display: "grid",
-  gridTemplateColumns: "1fr 0.95fr",
+  gridTemplateColumns: "1fr 0.92fr",
   overflow: "hidden",
   borderRadius: "28px",
-  border: "1px solid rgba(255,255,255,0.11)",
-  background: "rgba(5,6,18,0.92)",
-  boxShadow: "0 28px 90px rgba(0,0,0,0.55)",
+  border: "1px solid rgba(148,163,184,0.35)",
+  background: "rgba(255,255,255,0.88)",
+  boxShadow: "0 30px 80px rgba(15,23,42,0.14)",
 }
 
 const brandPanelStyle: CSSProperties = {
   position: "relative",
   padding: "48px",
-  borderRight: "1px solid rgba(255,255,255,0.09)",
+  borderRight: "1px solid rgba(148,163,184,0.26)",
   background:
-    "linear-gradient(145deg, rgba(124,58,237,0.16), rgba(255,255,255,0.02) 45%, rgba(5,6,18,0.5))",
+    "linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 45%, #EEF2F7 100%)",
 }
 
 const logoRowStyle: CSSProperties = {
@@ -254,45 +246,48 @@ const logoRowStyle: CSSProperties = {
 }
 
 const logoMarkStyle: CSSProperties = {
-  width: "38px",
-  height: "38px",
-  borderRadius: "12px",
+  width: "40px",
+  height: "40px",
+  borderRadius: "13px",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "linear-gradient(135deg, #8B5CF6, #A855F7)",
+  background: "linear-gradient(135deg, #111827, #334155)",
+  color: "#FFFFFF",
   fontSize: "17px",
   fontWeight: 900,
-  boxShadow: "0 16px 34px rgba(139,92,246,0.32)",
+  boxShadow: "0 16px 34px rgba(15,23,42,0.18)",
 }
 
 const brandNameStyle: CSSProperties = {
-  fontSize: "21px",
+  fontSize: "22px",
   fontWeight: 900,
   letterSpacing: "-0.03em",
+  color: "#0F172A",
 }
 
 const brandSubStyle: CSSProperties = {
   marginTop: "2px",
-  color: "#94A3B8",
+  color: "#64748B",
   fontSize: "12px",
-  fontWeight: 600,
+  fontWeight: 650,
 }
 
 const heroStyle: CSSProperties = {
-  marginTop: "86px",
-  maxWidth: "520px",
+  marginTop: "92px",
+  maxWidth: "500px",
 }
 
 const pillStyle: CSSProperties = {
   width: "fit-content",
   borderRadius: "999px",
-  border: "1px solid rgba(168,85,247,0.28)",
-  background: "rgba(124,58,237,0.16)",
-  color: "#C4B5FD",
+  border: "1px solid rgba(148,163,184,0.45)",
+  background: "#FFFFFF",
+  color: "#334155",
   padding: "7px 12px",
   fontSize: "12px",
   fontWeight: 800,
+  boxShadow: "0 8px 22px rgba(15,23,42,0.06)",
 }
 
 const heroTitleStyle: CSSProperties = {
@@ -301,20 +296,21 @@ const heroTitleStyle: CSSProperties = {
   lineHeight: 1.04,
   letterSpacing: "-0.055em",
   fontWeight: 950,
+  color: "#0F172A",
 }
 
 const heroTextStyle: CSSProperties = {
   margin: "22px 0 0",
-  maxWidth: "440px",
-  color: "#CBD5E1",
+  maxWidth: "430px",
+  color: "#475569",
   fontSize: "15px",
-  lineHeight: 1.7,
+  lineHeight: 1.75,
 }
 
 const featureListStyle: CSSProperties = {
-  marginTop: "48px",
+  marginTop: "46px",
   display: "grid",
-  gap: "18px",
+  gap: "16px",
 }
 
 const formPanelStyle: CSSProperties = {
@@ -322,30 +318,32 @@ const formPanelStyle: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   padding: "48px",
+  background:
+    "linear-gradient(180deg, rgba(248,250,252,0.88), rgba(255,255,255,0.96))",
 }
 
 const formStyle: CSSProperties = {
   width: "100%",
-  maxWidth: "430px",
+  maxWidth: "420px",
   borderRadius: "24px",
-  border: "1px solid rgba(255,255,255,0.12)",
-  background:
-    "linear-gradient(180deg, rgba(255,255,255,0.065), rgba(255,255,255,0.025))",
+  border: "1px solid rgba(148,163,184,0.36)",
+  background: "#FFFFFF",
   padding: "38px",
-  boxShadow: "0 24px 70px rgba(0,0,0,0.42)",
+  boxShadow: "0 22px 60px rgba(15,23,42,0.10)",
 }
 
 const formTitleStyle: CSSProperties = {
   margin: 0,
-  fontSize: "28px",
+  fontSize: "30px",
   lineHeight: 1.1,
-  letterSpacing: "-0.04em",
+  letterSpacing: "-0.045em",
   fontWeight: 950,
+  color: "#0F172A",
 }
 
 const formTextStyle: CSSProperties = {
   margin: "10px 0 0",
-  color: "#94A3B8",
+  color: "#64748B",
   fontSize: "13px",
   lineHeight: 1.6,
 }
@@ -359,9 +357,9 @@ const fieldsStyle: CSSProperties = {
 const labelStyle: CSSProperties = {
   display: "block",
   marginBottom: "8px",
-  color: "#E2E8F0",
+  color: "#334155",
   fontSize: "12px",
-  fontWeight: 800,
+  fontWeight: 850,
 }
 
 const inputBoxStyle: CSSProperties = {
@@ -370,8 +368,8 @@ const inputBoxStyle: CSSProperties = {
   alignItems: "center",
   gap: "12px",
   borderRadius: "14px",
-  border: "1px solid rgba(255,255,255,0.14)",
-  background: "rgba(3,4,12,0.72)",
+  border: "1px solid rgba(148,163,184,0.45)",
+  background: "#F8FAFC",
   padding: "0 14px",
 }
 
@@ -380,15 +378,19 @@ const inputStyle: CSSProperties = {
   border: "none",
   outline: "none",
   background: "transparent",
-  color: "white",
+  color: "#0F172A",
   fontSize: "14px",
 }
 
 const alertStyle: CSSProperties = {
   margin: 0,
-  color: "#FCA5A5",
+  borderRadius: "12px",
+  background: "#FEF2F2",
+  border: "1px solid #FECACA",
+  color: "#B91C1C",
+  padding: "10px 12px",
   fontSize: "12px",
-  fontWeight: 700,
+  fontWeight: 750,
   lineHeight: 1.5,
 }
 
@@ -396,22 +398,22 @@ const signInButtonStyle: CSSProperties = {
   height: "48px",
   borderRadius: "14px",
   border: "none",
-  background: "linear-gradient(90deg, #8B5CF6 0%, #9333EA 55%, #7E22CE 100%)",
+  background: "linear-gradient(135deg, #111827, #334155)",
   color: "white",
   fontSize: "14px",
   fontWeight: 900,
-  boxShadow: "0 18px 36px rgba(124,58,237,0.32)",
+  boxShadow: "0 18px 34px rgba(15,23,42,0.18)",
 }
 
 const signupTextStyle: CSSProperties = {
   margin: 0,
   textAlign: "center",
-  color: "#94A3B8",
+  color: "#64748B",
   fontSize: "13px",
 }
 
 const signupLinkStyle: CSSProperties = {
-  color: "#C084FC",
+  color: "#111827",
   fontWeight: 900,
   textDecoration: "none",
 }
@@ -447,23 +449,25 @@ const featureIconStyle: CSSProperties = {
   height: "42px",
   flex: "0 0 auto",
   borderRadius: "14px",
-  border: "1px solid rgba(168,85,247,0.26)",
-  background: "rgba(124,58,237,0.18)",
+  border: "1px solid rgba(148,163,184,0.36)",
+  background: "#FFFFFF",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  color: "#C084FC",
+  color: "#334155",
+  boxShadow: "0 10px 24px rgba(15,23,42,0.06)",
 }
 
 const featureTitleStyle: CSSProperties = {
   margin: 0,
   fontSize: "14px",
   fontWeight: 850,
+  color: "#0F172A",
 }
 
 const featureTextStyle: CSSProperties = {
   margin: "4px 0 0",
-  color: "#94A3B8",
+  color: "#64748B",
   fontSize: "12px",
   lineHeight: 1.5,
 }
